@@ -2,11 +2,17 @@ package ui.checkout
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.ecommerce.citybasket.R
+import data.remote.response.CartItemResponse
+import data.remote.api.RetrofitClient
+import kotlinx.coroutines.launch
+import utils.TokenManager
 
 class CheckoutActivity : AppCompatActivity() {
 
@@ -17,9 +23,19 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var line1: View
     private lateinit var line2: View
 
+    // Shared Checkout Data Holders
+    private lateinit var tokenManager: TokenManager
+    var selectedAddressForCheckout: data.model.address.AddressData? = null
+    var totalCartAmount: Double = 0.0
+
+    // 🔥 FIXED: Aapke core CartItemResponse model type ke sath configured list
+    var checkoutCartItems: List<CartItemResponse> = emptyList()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_checkout)
+
+        tokenManager = TokenManager(this)
 
         tvStepTitle = findViewById(R.id.tvStepTitle)
         step1 = findViewById(R.id.step1)
@@ -29,14 +45,18 @@ class CheckoutActivity : AppCompatActivity() {
         line2 = findViewById(R.id.line2)
 
         if (savedInstanceState == null) {
-            // Shuruat me Step 1 load karo bina backstack ke
+            totalCartAmount = intent.getDoubleExtra("TOTAL_BILL_AMOUNT", 0.0)
+
+            // Dynamic background item data fetch trigger
+            fetchCartItemsForSummary()
+
             updateStepperUI(1, "Address Confirmation")
             supportFragmentManager.beginTransaction()
                 .replace(R.id.checkoutContainer, AddressFragment())
                 .commit()
         }
 
-        // Jab bhi Fragment change hoga (Back press se ya normal), ye listener stepper automatically sahi kar dega
+        // Stepper UI sync handling on Fragment Stack shifting
         supportFragmentManager.addOnBackStackChangedListener {
             val currentFragment = supportFragmentManager.findFragmentById(R.id.checkoutContainer)
             when (currentFragment) {
@@ -47,15 +67,38 @@ class CheckoutActivity : AppCompatActivity() {
         }
     }
 
-    // Naya Fragment load karne ke liye proper transaction function
+    // Backend active tracking helper mapping
+    private fun fetchCartItemsForSummary() {
+        val token = tokenManager.getToken()
+        if (token.isNullOrEmpty()) return
+
+        lifecycleScope.launch {
+            try {
+                val authHeader = "Bearer $token"
+                val response = RetrofitClient.userApi.getCart(authHeader)
+                if (response.isSuccessful && response.body() != null) {
+                    val cartResponse = response.body()!!
+                    if (cartResponse.success) {
+                        checkoutCartItems = cartResponse.cartItems
+                        Log.d("CHECKOUT_ACTIVITY", "Successfully synced ${checkoutCartItems.size} items for summary.")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("CHECKOUT_ACTIVITY", "Error syncing cart background details: ${e.message}")
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // Custom flow state navigation load manager function
     fun loadFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.checkoutContainer, fragment)
-            .addToBackStack(null) // 🔥 Isse back button step-by-step kaam karega
+            .addToBackStack(null)
             .commit()
     }
 
-    // 100% Fixed Stepper Color Logic
+    // Custom 3-Step Flow Color Palette Stepper Management Logic
     private fun updateStepperUI(step: Int, title: String) {
         tvStepTitle.text = title
 
@@ -64,7 +107,6 @@ class CheckoutActivity : AppCompatActivity() {
 
         when (step) {
             1 -> {
-                // Step 1 Active, baaki sab Inactive
                 step1.setBackgroundResource(R.drawable.bg_step_active)
                 step1.setTextColor(Color.WHITE)
                 line1.setBackgroundColor(colorGrey)
@@ -77,7 +119,6 @@ class CheckoutActivity : AppCompatActivity() {
                 step3.setTextColor(colorBlack)
             }
             2 -> {
-                // Step 1 aur 2 Active, Step 3 Inactive
                 step1.setBackgroundResource(R.drawable.bg_step_active)
                 step1.setTextColor(Color.WHITE)
                 line1.setBackgroundColor(colorBlack)
@@ -90,7 +131,6 @@ class CheckoutActivity : AppCompatActivity() {
                 step3.setTextColor(colorBlack)
             }
             3 -> {
-                // Saare Steps Active
                 step1.setBackgroundResource(R.drawable.bg_step_active)
                 step1.setTextColor(Color.WHITE)
                 line1.setBackgroundColor(colorBlack)
@@ -105,7 +145,6 @@ class CheckoutActivity : AppCompatActivity() {
         }
     }
 
-    // Handle Hardware Back Button
     override fun onSupportNavigateUp(): Boolean {
         if (supportFragmentManager.backStackEntryCount > 0) {
             supportFragmentManager.popBackStack()

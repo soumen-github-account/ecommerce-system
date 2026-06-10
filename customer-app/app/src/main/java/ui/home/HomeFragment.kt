@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -23,6 +24,8 @@ import data.model.category.TopCategory
 import data.remote.api.RetrofitClient
 import data.remote.request.WishlistRequest
 import kotlinx.coroutines.launch
+import ui.address.AddAddressActivity
+import ui.address.AddressManagementActivity // 🔥 Naya import add kiya
 import utils.TokenManager
 import kotlin.math.abs
 
@@ -31,6 +34,14 @@ class HomeFragment : Fragment() {
     private lateinit var rvHomeSections: RecyclerView
     private lateinit var topCategoryAdapter: TopCategoryAdapter
     private lateinit var tokenManager: TokenManager
+
+    private lateinit var layoutLocationContainer: LinearLayout
+    private lateinit var layoutAddAddressContainer: LinearLayout
+    private lateinit var txtAddressTypeHeader: TextView
+    private lateinit var txtShortAddress: TextView
+
+    // 🔥 Dynamic Flag: Isse pata chalega user ke paas address saved hai ya nahi
+    private var hasSavedAddresses: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,6 +54,32 @@ class HomeFragment : Fragment() {
         val appBarLayout = view.findViewById<AppBarLayout>(R.id.appBar)
         val searchSection = view.findViewById<LinearLayout>(R.id.searchSection)
         val searchInput = view.findViewById<LinearLayout>(R.id.searchInput)
+
+        layoutLocationContainer = view.findViewById(R.id.layoutLocationContainer)
+        layoutAddAddressContainer = view.findViewById(R.id.layoutAddAddressContainer)
+        txtAddressTypeHeader = view.findViewById(R.id.txtAddressTypeHeader)
+        txtShortAddress = view.findViewById(R.id.txtShortAddress)
+
+        // 🔥 Updated Click Listener: Condition ke base par redirect karega
+        val addressClickListener = View.OnClickListener {
+            val savedToken = tokenManager.getToken()
+            if (savedToken.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "Please Login first!", Toast.LENGTH_SHORT).show()
+                return@OnClickListener
+            }
+
+            if (hasSavedAddresses) {
+                // Address hai -> Management page par bhejo
+                startActivity(Intent(requireContext(), AddressManagementActivity::class.java))
+            } else {
+                // Address nahi hai -> Direct Form page par bhejo
+                startActivity(Intent(requireContext(), AddAddressActivity::class.java))
+            }
+        }
+
+        // Dono container par click listener bind kiya
+        layoutLocationContainer.setOnClickListener(addressClickListener)
+        layoutAddAddressContainer.setOnClickListener(addressClickListener)
 
         searchInput.setOnClickListener {
             startActivity(Intent(requireContext(), SearchActivity::class.java))
@@ -64,7 +101,60 @@ class HomeFragment : Fragment() {
         rvHomeSections = view.findViewById(R.id.rvHomeSections)
         rvHomeSections.layoutManager = LinearLayoutManager(requireContext())
 
+        fetchAndSetupUserAddress()
         return view
+    }
+
+    private fun fetchAndSetupUserAddress() {
+        val savedToken = tokenManager.getToken()
+
+        if (savedToken.isNullOrEmpty()) {
+            hasSavedAddresses = false
+            layoutLocationContainer.visibility = View.GONE
+            layoutAddAddressContainer.visibility = View.VISIBLE
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                val authHeader = "Bearer $savedToken"
+                val response = RetrofitClient.userApi.getUserAddresses(authHeader)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val addressList = response.body()!!.addresses
+
+                    if (addressList.isNotEmpty()) {
+                        hasSavedAddresses = true // Flag true kiya
+                        val activeAddress = addressList.first()
+
+                        txtAddressTypeHeader.text = (activeAddress.addressType ?: "HOME").uppercase()
+                        txtShortAddress.text = " ${activeAddress.addressLine1}, ${activeAddress.city}"
+
+                        // UI Switch
+                        layoutAddAddressContainer.visibility = View.GONE
+                        layoutLocationContainer.visibility = View.VISIBLE
+                    } else {
+                        hasSavedAddresses = false // Flag false kiya
+                        layoutLocationContainer.visibility = View.GONE
+                        layoutAddAddressContainer.visibility = View.VISIBLE
+                    }
+                } else {
+                    hasSavedAddresses = false
+                    layoutLocationContainer.visibility = View.GONE
+                    layoutAddAddressContainer.visibility = View.VISIBLE
+                }
+            } catch (e: Exception) {
+                Log.e("HOME_ADDRESS_DEBUG", "Failed to fetch top header address: ${e.message}")
+                hasSavedAddresses = false
+                layoutLocationContainer.visibility = View.GONE
+                layoutAddAddressContainer.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        fetchAndSetupUserAddress()
     }
 
     private fun loadHomeSections(categoryId: String) {

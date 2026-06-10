@@ -18,6 +18,7 @@ import com.ecommerce.citybasket.ui.cart.CartAdapter
 import data.remote.api.RetrofitClient
 import data.remote.request.RemoveCartRequest
 import data.remote.request.UpdateCartRequest
+import data.remote.response.CartItemResponse
 import kotlinx.coroutines.launch
 import ui.checkout.CheckoutActivity
 import utils.TokenManager
@@ -30,6 +31,11 @@ class CartFragment : Fragment() {
 
     private lateinit var txtCartCount: TextView
     private lateinit var txtTotalPrice: TextView
+    private var currentGrandTotal: Double = 0.0
+    // 🔥 CheckoutActivity ke andar in lines ko add/update karein:
+    var selectedAddressForCheckout: data.model.address.AddressData? = null
+    var totalCartAmount: Double = 0.0
+    var checkoutCartItems: List<CartItemResponse> = emptyList() // 🔥 Products track karne ke liye
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -50,7 +56,17 @@ class CartFragment : Fragment() {
 
         val btnCheckout = view.findViewById<Button>(R.id.btnCheckout)
         btnCheckout.setOnClickListener {
-            val intent = Intent(requireContext(), CheckoutActivity::class.java)
+            if (currentGrandTotal <= 0.0) {
+                Toast.makeText(requireContext(), "Your cart is empty!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // 🔥 Intent ke sath amount aur cart items dono pass kar rahe hain
+            val intent = Intent(requireContext(), CheckoutActivity::class.java).apply {
+                putExtra("TOTAL_BILL_AMOUNT", currentGrandTotal)
+                // Agar CartItem ya Product model Serializable/Parcelable hai toh direct bhej sakte hain,
+                // ya fir sabse best aur safe tarika hai ki CheckoutActivity khud hi apne onCreate me ya fragments ke through share kare.
+            }
             startActivity(intent)
         }
 
@@ -79,7 +95,9 @@ class CartFragment : Fragment() {
 
                     if (cartResponse != null && cartResponse.success) {
 
-                        // FIXED: Do callbacks pass kiye (Delete aur Quantity Update)
+                        // 🔥 FIXED: Variable ko update kiya taaki checkout empty na bole
+                        currentGrandTotal = cartResponse.grandTotal.toString().toDoubleOrNull() ?: 0.0
+
                         rvCart.adapter = CartAdapter(
                             cartResponse.cartItems,
                             cartResponse.subTotal,
@@ -125,6 +143,9 @@ class CartFragment : Fragment() {
                     if (cartResponse != null && cartResponse.success) {
                         Toast.makeText(requireContext(), "Item removed!", Toast.LENGTH_SHORT).show()
 
+                        // 🔥 FIXED: Variable ko yahan bhi update kiya string translation se safely
+                        currentGrandTotal = cartResponse.grandTotal.toString().toDoubleOrNull() ?: 0.0
+
                         // Local refresh
                         rvCart.adapter = CartAdapter(
                             cartResponse.cartItems,
@@ -151,7 +172,6 @@ class CartFragment : Fragment() {
         }
     }
 
-    // FIXED: Naya function quantity increase/decrease handle karne ke liye
     private fun updateQuantity(productId: String, action: String) {
         val savedToken = tokenManager.getToken() ?: return
         progressBar.visibility = View.VISIBLE
@@ -166,6 +186,9 @@ class CartFragment : Fragment() {
                 if (response.isSuccessful) {
                     val cartResponse = response.body()
                     if (cartResponse != null && cartResponse.success) {
+
+                        // 🔥 FIXED: Variable ko yahan bhi sync kiya naye amount ke sath
+                        currentGrandTotal = cartResponse.grandTotal.toString().toDoubleOrNull() ?: 0.0
 
                         // Live sync with new data
                         rvCart.adapter = CartAdapter(

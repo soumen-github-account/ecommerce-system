@@ -6,6 +6,7 @@ import { connectDb } from "./config/db.js"
 import authRouter from "./routes/authRoute.js"
 import userRouter from "./routes/userRoute.js"
 import productRouter from "./routes/productRoute.js"
+import paymentRouter from "./routes/paymentRoutes.js"
 import admin from "./config/firebase.js"
 
 const PORT = 8000 | process.env.PORT
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRouter)
 app.use("/api/user", userRouter)
 app.use("/api/product", productRouter)
+app.use("/api/payment", paymentRouter)
 
 
 app.listen(PORT, "0.0.0.0", () => {
