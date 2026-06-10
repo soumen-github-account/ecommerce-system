@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:paddingTop="35dp"
+    android:background="#F5F5F5">
+
+    <!-- LEFT CATEGORY -->
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvLeftCategory"
+        android:layout_width="70dp"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:paddingTop="6dp"
+        tools:listitem="@layout/item_left_category"/>
+
+    <!-- RIGHT SIDE -->
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:background="#FFFFFF">
+
+        <LinearLayout
+            android:id="@+id/layoutRightContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- TOP BANNER -->
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <ImageView
+                    android:id="@+id/imgBanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/banner"/>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvCategoryItems"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_category_grid"/>
+
+
+            <!--            &lt;!&ndash; SECTION 1 &ndash;&gt;-->
+
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="20dp"-->
+<!--                android:text="In the Spotlight"-->
+<!--                android:textColor="#000000"-->
+<!--                android:textSize="22sp"-->
+<!--                android:textStyle="bold"/>-->
+
+<!--            <androidx.recyclerview.widget.RecyclerView-->
+<!--                android:id="@+id/rvSpotlight"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="14dp"-->
+<!--                android:nestedScrollingEnabled="false"-->
+<!--                tools:listitem="@layout/item_category_grid"/>-->
+
+<!--            &lt;!&ndash; SECTION 2 &ndash;&gt;-->
+
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="26dp"-->
+<!--                android:text="Men's Clothing"-->
+<!--                android:textColor="#000000"-->
+<!--                android:textSize="22sp"-->
+<!--                android:textStyle="bold"/>-->
+
+<!--            <androidx.recyclerview.widget.RecyclerView-->
+<!--                android:id="@+id/rvMensClothing"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="14dp"-->
+<!--                android:nestedScrollingEnabled="false"-->
+<!--                tools:listitem="@layout/item_category_grid"/>-->
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

@@ -1,0 +1,13 @@
+Android App (Kotlin)
+        ↓
+Firebase Phone Auth
+        ↓
+OTP Verification
+        ↓
+Firebase ID Token
+        ↓
+Node.js + Express
+        ↓
+MongoDB
+        ↓
+JWT

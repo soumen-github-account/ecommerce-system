@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Payment Method"
+        android:textColor="#121212"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"/>
+
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rbCod"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Cash on Delivery (COD)"
+            android:buttonTint="#121212"
+            android:textColor="#121212"
+            android:textSize="16sp" />
+
+        <RadioButton
+            android:id="@+id/rbUpi"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="UPI / Net Banking"
+            android:buttonTint="#121212"
+            android:textColor="#121212"
+            android:textSize="16sp" />
+    </RadioGroup>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/btnPlaceOrder"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:backgroundTint="#121212"
+        android:text="Place Order"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+</LinearLayout>

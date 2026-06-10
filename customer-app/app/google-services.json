@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "700720320883",
+    "project_id": "citybasket-32536",
+    "storage_bucket": "citybasket-32536.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:700720320883:android:03b8a2ba627e760eddb506",
+        "android_client_info": {
+          "package_name": "com.ecommerce.citybasket"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQHRn2Z6xpQYaF3A_elyPFKwGHL9ZfsYg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

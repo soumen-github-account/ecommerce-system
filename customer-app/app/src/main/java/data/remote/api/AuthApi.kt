@@ -1,0 +1,14 @@
+package data.remote.api
+import data.remote.request.FirebaseLoginRequest
+import data.remote.response.FirebaseLoginResponse
+import retrofit2.Call
+import retrofit2.http.Body
+import retrofit2.http.POST
+
+interface AuthApi {
+
+    @POST("api/auth/firebase-login")
+    fun firebaseLogin(
+        @Body request: FirebaseLoginRequest
+    ): Call<FirebaseLoginResponse>
+}
