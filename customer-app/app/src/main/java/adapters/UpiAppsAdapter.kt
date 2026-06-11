@@ -15,7 +15,8 @@ import com.ecommerce.citybasket.R
 
 class UpiAppsAdapter(
     private val apps: List<UpiApp>,
-    private val onSelected: (UpiApp) -> Unit
+    private val onAppSelected: (UpiApp) -> Unit,
+    private val onPayClicked: (UpiApp) -> Unit
 ) : RecyclerView.Adapter<UpiAppsAdapter.ViewHolder>() {
 
     private var selectedPosition = -1
@@ -60,16 +61,18 @@ class UpiAppsAdapter(
         holder.btnPay.visibility = if (selectedPosition == position) View.VISIBLE else View.GONE
 
         holder.itemView.setOnClickListener {
+
             selectedPosition = holder.adapterPosition
+
             notifyDataSetChanged()
-            onSelected(app)
+
+            onAppSelected(app)
         }
 
         // Pay button click
         holder.btnPay.setOnClickListener {
-            // Yaha direct Payment Logic trigger karo
-            onSelected(app)
-            // Trigger your payment processing function here
+
+            onPayClicked(app)
         }
     }
 
