@@ -58,7 +58,6 @@ class CheckoutActivity : AppCompatActivity() {
                 .commit()
         }
 
-        // Stepper UI sync handling on Fragment Stack shifting
         supportFragmentManager.addOnBackStackChangedListener {
             val currentFragment = supportFragmentManager.findFragmentById(R.id.checkoutContainer)
             when (currentFragment) {

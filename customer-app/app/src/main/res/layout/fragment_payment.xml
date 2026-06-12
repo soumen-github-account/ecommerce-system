@@ -125,9 +125,26 @@
                 </LinearLayout>
 
                 <ImageView
+                    android:id="@+id/imgCardArrow"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_down"/>
+
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/layoutCardContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/btnCardPay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/black"
+                    android:text="Continue With Card"/>
             </LinearLayout>
 
             <!-- COD -->
@@ -155,29 +172,36 @@
                     android:textSize="18sp"/>
 
                 <ImageView
+                    android:id="@+id/imgCodArrow"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_down"/>
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/layoutCodContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#232323"
+                    android:text="Pay after delivery"/>
+
+                <Button
+                    android:id="@+id/btnCodPay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/black"
+                    android:text="Place Order"/>
             </LinearLayout>
 
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 
-<!--    &lt;!&ndash; Bottom Pay Button &ndash;&gt;-->
-
-<!--    <LinearLayout-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="70dp"-->
-<!--        android:padding="12dp">-->
-
-<!--        <Button-->
-<!--            android:id="@+id/btnPayNow"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="match_parent"-->
-<!--            android:text="Pay ₹0"-->
-<!--            android:textStyle="bold"/>-->
-
-<!--    </LinearLayout>-->
 
 </LinearLayout>

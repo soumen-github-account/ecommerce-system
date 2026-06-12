@@ -8,6 +8,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -26,6 +28,16 @@ import kotlinx.coroutines.Job
 
 
 class PaymentFragment : Fragment() {
+    private lateinit var layoutUpiHeader: LinearLayout
+    private lateinit var layoutCard: LinearLayout
+    private lateinit var layoutCod: LinearLayout
+
+    private lateinit var layoutCardContent: LinearLayout
+    private lateinit var layoutCodContent: LinearLayout
+
+    private lateinit var imgUpiArrow: ImageView
+    private lateinit var imgCardArrow: ImageView
+    private lateinit var imgCodArrow: ImageView
 
     private lateinit var rvUpiApps: RecyclerView
 
@@ -56,11 +68,27 @@ class PaymentFragment : Fragment() {
         initViews(view)
 
         loadInstalledUpiApps()
+        setupExpandCollapse()
 
         return view
     }
 
     private fun initViews(view: View) {
+        layoutUpiHeader = view.findViewById(R.id.layoutUpiHeader)
+
+        layoutCard = view.findViewById(R.id.layoutCard)
+
+        layoutCod = view.findViewById(R.id.layoutCod)
+
+        layoutCardContent = view.findViewById(R.id.layoutCardContent)
+
+        layoutCodContent = view.findViewById(R.id.layoutCodContent)
+
+        imgUpiArrow = view.findViewById(R.id.imgUpiArrow)
+
+        imgCardArrow = view.findViewById(R.id.imgCardArrow)
+
+        imgCodArrow = view.findViewById(R.id.imgCodArrow)
 
         rvUpiApps =
             view.findViewById(
@@ -71,6 +99,69 @@ class PaymentFragment : Fragment() {
             LinearLayoutManager(
                 requireContext()
             )
+    }
+
+    private fun setupExpandCollapse() {
+
+        layoutUpiHeader.setOnClickListener {
+
+            rvUpiApps.visibility = View.VISIBLE
+
+            layoutCardContent.visibility = View.GONE
+            layoutCodContent.visibility = View.GONE
+
+            imgUpiArrow.setImageResource(
+                R.drawable.ic_arrow_up
+            )
+
+            imgCardArrow.setImageResource(
+                R.drawable.ic_arrow_down
+            )
+
+            imgCodArrow.setImageResource(
+                R.drawable.ic_arrow_down
+            )
+        }
+
+        layoutCard.setOnClickListener {
+
+            rvUpiApps.visibility = View.GONE
+
+            layoutCardContent.visibility = View.VISIBLE
+            layoutCodContent.visibility = View.GONE
+
+            imgUpiArrow.setImageResource(
+                R.drawable.ic_arrow_down
+            )
+
+            imgCardArrow.setImageResource(
+                R.drawable.ic_arrow_up
+            )
+
+            imgCodArrow.setImageResource(
+                R.drawable.ic_arrow_down
+            )
+        }
+
+        layoutCod.setOnClickListener {
+
+            rvUpiApps.visibility = View.GONE
+
+            layoutCardContent.visibility = View.GONE
+            layoutCodContent.visibility = View.VISIBLE
+
+            imgUpiArrow.setImageResource(
+                R.drawable.ic_arrow_down
+            )
+
+            imgCardArrow.setImageResource(
+                R.drawable.ic_arrow_down
+            )
+
+            imgCodArrow.setImageResource(
+                R.drawable.ic_arrow_up
+            )
+        }
     }
 
     private fun loadInstalledUpiApps() {

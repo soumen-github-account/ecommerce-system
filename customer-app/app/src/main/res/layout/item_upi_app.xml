@@ -17,6 +17,7 @@
             android:layout_height="70dp"
             android:gravity="center_vertical"
             android:paddingHorizontal="16dp"
+            android:background="#F2F2F2"
             android:orientation="horizontal">
 
             <RadioButton
@@ -45,6 +46,7 @@
             android:layout_height="wrap_content"
             android:text="Pay Now"
             android:visibility="gone"
+            android:backgroundTint="@color/black"
             android:layout_margin="8dp"/>
     </LinearLayout>
 
