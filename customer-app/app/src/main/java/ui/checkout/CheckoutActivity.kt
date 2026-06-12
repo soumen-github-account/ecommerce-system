@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.ecommerce.citybasket.R
+import data.model.payment.PaymentSession
 import data.remote.response.CartItemResponse
 import data.remote.api.RetrofitClient
 import kotlinx.coroutines.launch
@@ -22,6 +23,7 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var step3: TextView
     private lateinit var line1: View
     private lateinit var line2: View
+    var currentPaymentSession: PaymentSession? = null
 
     // Shared Checkout Data Holders
     private lateinit var tokenManager: TokenManager

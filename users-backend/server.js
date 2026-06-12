@@ -9,7 +9,7 @@ import productRouter from "./routes/productRoute.js"
 import paymentRouter from "./routes/paymentRoutes.js"
 import admin from "./config/firebase.js"
 
-const PORT = 8000 | process.env.PORT
+const PORT = process.env.PORT || 8000
 const app = express()
 app.use(express.json())
 app.use(cors())

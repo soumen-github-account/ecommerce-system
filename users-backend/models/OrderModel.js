@@ -1,65 +1,76 @@
 import mongoose from "mongoose";
 
-const OrderSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
-    items: [
-      {
-        product: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
+const orderSchema = new mongoose.Schema(
+    {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
         },
 
-        quantity: Number,
+        items: [
+            {
+                productId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Product"
+                },
 
-        price: Number,
-      },
-    ],
+                quantity: Number,
 
-    address: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Address",
-      required: true,
+                price: Number,
+
+                variantId: String
+            }
+        ],
+
+        addressId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Address"
+        },
+
+        totalAmount: {
+            type: Number,
+            required: true
+        },
+
+        paymentMethod: {
+            type: String,
+            enum: ["UPI", "CARD", "COD"]
+        },
+
+        paymentStatus: {
+            type: String,
+            enum: [
+                "PENDING",
+                "SUCCESS",
+                "FAILED"
+            ],
+            default: "PENDING"
+        },
+
+        orderStatus: {
+            type: String,
+            enum: [
+                "INITIATED",
+                "CONFIRMED",
+                "SHIPPED",
+                "DELIVERED",
+                "CANCELLED"
+            ],
+            default: "INITIATED"
+        },
+
+        paymentSessionId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "PaymentSession"
+        }
     },
-
-    totalAmount: {
-      type: Number,
-      required: true,
-    },
-
-    paymentMethod: {
-      type: String,
-      enum: ["COD", "ONLINE"],
-      required: true,
-    },
-
-    paymentStatus: {
-      type: String,
-      enum: ["PENDING", "PAID", "FAILED"],
-      default: "PENDING",
-    },
-
-    orderStatus: {
-      type: String,
-      enum: [
-        "PLACED",
-        "CONFIRMED",
-        "SHIPPED",
-        "OUT_FOR_DELIVERY",
-        "DELIVERED",
-        "CANCELLED",
-      ],
-      default: "PLACED",
-    },
-  },
-  {
-    timestamps: true,
-  },
+    {
+        timestamps: true
+    }
 );
 
-export const Order = mongoose.model("Order", OrderSchema);
+export const Order = mongoose.model(
+    "Order",
+    orderSchema
+);

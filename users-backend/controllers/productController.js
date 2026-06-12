@@ -23,26 +23,6 @@ export const getAllProduct = async(req, res) => {
     }
 }
 
-// export const getAllCategory = async (req, res) => {
-//     try {
-//         const categories = await Category.find({})
-//         .populate("subCategories");
-
-//         res.status(200).json({
-//         success: true,
-//         count: categories.length,
-//         categories
-//         });
-
-//     } catch (error) {
-//         res.status(500).json({
-//         success: false,
-//         message: error.message
-//         });
-//     }
-// };
-
-
 export const getAllCategory = async (req, res) => {
     try {
         const categories = await Category.find({})

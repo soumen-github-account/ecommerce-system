@@ -1,12 +1,14 @@
 package data.remote.response
 
-data class CreateOrderResponse(
+data class PaymentStatusResponse(
 
     val success: Boolean,
+
+    val status: String,
 
     val orderId: String,
 
     val amount: Double,
 
-    val currency: String
+    val paymentMethod: String
 )

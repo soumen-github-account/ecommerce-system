@@ -2,16 +2,15 @@ package data.remote.api
 
 import data.remote.request.AddressRequest
 import data.remote.request.CartRequest
-import data.remote.request.CreateOrderRequest
+import data.remote.request.CreatePaymentSessionRequest
 import data.remote.request.RemoveCartRequest
 import data.remote.request.UpdateCartRequest
-import data.remote.request.VerifyPaymentRequest
 import data.remote.request.WishlistRequest
 import data.remote.response.AddressDeleteResponse
 import data.remote.response.CartResponse
-import data.remote.response.CreateOrderResponse
+import data.remote.response.CreatePaymentSessionResponse
+import data.remote.response.PaymentStatusResponse
 import data.remote.response.UserResponse
-import data.remote.response.VerifyPaymentResponse
 import data.remote.response.WishlistResponse
 import retrofit2.Response
 import retrofit2.http.Body
@@ -82,26 +81,19 @@ interface ApiService {
         @Body request: AddressRequest
     ): Response<data.model.address.AddressResponse>
 
-    @POST("api/payment/create-order")
-    suspend fun createOrder(
+    @POST("api/payment/create-session")
+    suspend fun createPaymentSession(
+        @Header("Authorization") token: String,
+        @Body request: CreatePaymentSessionRequest
+    ): Response<CreatePaymentSessionResponse>
+
+    @GET("api/payment/status/{sessionId}")
+    suspend fun getPaymentStatus(
 
         @Header("Authorization")
         token: String,
 
-        @Body
-        request: CreateOrderRequest
-
-    ): Response<CreateOrderResponse>
-
-    @POST("api/payment/verify")
-    suspend fun verifyPayment(
-
-        @Header("Authorization")
-        token: String,
-
-        @Body
-        request: VerifyPaymentRequest
-
-    ): Response<VerifyPaymentResponse>
-
+        @Path("sessionId")
+        sessionId: String
+    ): Response<PaymentStatusResponse>
 }
