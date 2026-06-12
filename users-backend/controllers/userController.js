@@ -202,7 +202,7 @@ export const getCartItems = async (req, res) => {
     let shippingCharges = 0;
     if (cartItems.length > 0) {
       // Agar subtotal 500 se kam hai toh 50rs shipping, varna free (0)
-      shippingCharges = subTotal > 500 ? 0 : 50;
+      shippingCharges = subTotal > 500 ? 0 : 0;
     }
 
     // 4. Grand Total Calculate karna
