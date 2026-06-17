@@ -32,6 +32,7 @@ class CheckoutActivity : AppCompatActivity() {
 
     // 🔥 FIXED: Aapke core CartItemResponse model type ke sath configured list
     var checkoutCartItems: List<CartItemResponse> = emptyList()
+    var orderId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

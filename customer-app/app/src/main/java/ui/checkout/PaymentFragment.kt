@@ -28,8 +28,8 @@ import utils.TokenManager
 import kotlinx.coroutines.Job
 import org.json.JSONObject
 
+class PaymentFragment : Fragment(), com.razorpay.PaymentResultListener {
 
-class PaymentFragment : Fragment(),  com.razorpay.PaymentResultListener {
     private lateinit var layoutUpiHeader: LinearLayout
     private lateinit var layoutCard: LinearLayout
     private lateinit var layoutCod: LinearLayout
@@ -53,15 +53,9 @@ class PaymentFragment : Fragment(),  com.razorpay.PaymentResultListener {
         savedInstanceState: Bundle?
     ): View {
 
-        val view =
-            inflater.inflate(
-                R.layout.fragment_payment,
-                container,
-                false
-            )
+        val view = inflater.inflate(R.layout.fragment_payment, container, false)
 
         initViews(view)
-
         loadInstalledUpiApps()
         setupExpandCollapse()
 
@@ -70,159 +64,70 @@ class PaymentFragment : Fragment(),  com.razorpay.PaymentResultListener {
 
     private fun initViews(view: View) {
         layoutUpiHeader = view.findViewById(R.id.layoutUpiHeader)
-
         layoutCard = view.findViewById(R.id.layoutCard)
-
         layoutCod = view.findViewById(R.id.layoutCod)
 
         layoutCardContent = view.findViewById(R.id.layoutCardContent)
-
         layoutCodContent = view.findViewById(R.id.layoutCodContent)
 
         imgUpiArrow = view.findViewById(R.id.imgUpiArrow)
-
         imgCardArrow = view.findViewById(R.id.imgCardArrow)
-
         imgCodArrow = view.findViewById(R.id.imgCodArrow)
 
-        rvUpiApps =
-            view.findViewById(
-                R.id.rvUpiApps
-            )
-
-        rvUpiApps.layoutManager =
-            LinearLayoutManager(
-                requireContext()
-            )
+        rvUpiApps = view.findViewById(R.id.rvUpiApps)
+        rvUpiApps.layoutManager = LinearLayoutManager(requireContext())
     }
 
     private fun setupExpandCollapse() {
 
         layoutUpiHeader.setOnClickListener {
-
             rvUpiApps.visibility = View.VISIBLE
-
             layoutCardContent.visibility = View.GONE
             layoutCodContent.visibility = View.GONE
-
-            imgUpiArrow.setImageResource(
-                R.drawable.ic_arrow_up
-            )
-
-            imgCardArrow.setImageResource(
-                R.drawable.ic_arrow_down
-            )
-
-            imgCodArrow.setImageResource(
-                R.drawable.ic_arrow_down
-            )
         }
 
         layoutCard.setOnClickListener {
-
             rvUpiApps.visibility = View.GONE
-
             layoutCardContent.visibility = View.VISIBLE
             layoutCodContent.visibility = View.GONE
-
-            imgUpiArrow.setImageResource(
-                R.drawable.ic_arrow_down
-            )
-
-            imgCardArrow.setImageResource(
-                R.drawable.ic_arrow_up
-            )
-
-            imgCodArrow.setImageResource(
-                R.drawable.ic_arrow_down
-            )
         }
 
         layoutCod.setOnClickListener {
-
             rvUpiApps.visibility = View.GONE
-
             layoutCardContent.visibility = View.GONE
             layoutCodContent.visibility = View.VISIBLE
-
-            imgUpiArrow.setImageResource(
-                R.drawable.ic_arrow_down
-            )
-
-            imgCardArrow.setImageResource(
-                R.drawable.ic_arrow_down
-            )
-
-            imgCodArrow.setImageResource(
-                R.drawable.ic_arrow_up
-            )
         }
     }
 
     private fun loadInstalledUpiApps() {
+        val apps = getInstalledUpiApps()
 
-        val apps =
-            getInstalledUpiApps()
-
-        rvUpiApps.adapter =
-            UpiAppsAdapter(
-
-                apps,
-
-                onAppSelected = {
-
-                    selectedUpiApp = it
-                },
-
-                onPayClicked = {
-
-                    selectedUpiApp = it
-
-                    createPaymentSession()
-                }
-            )
+        rvUpiApps.adapter = UpiAppsAdapter(
+            apps,
+            onAppSelected = { selectedUpiApp = it },
+            onPayClicked = {
+                selectedUpiApp = it
+                createPaymentSession()
+            }
+        )
     }
 
-    private fun getInstalledUpiApps():
-            MutableList<UpiApp> {
+    private fun getInstalledUpiApps(): MutableList<UpiApp> {
+        val apps = mutableListOf<UpiApp>()
 
-        val apps =
-            mutableListOf<UpiApp>()
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = Uri.parse("upi://pay")
 
-        val intent =
-            Intent(Intent.ACTION_VIEW)
-
-        intent.data =
-            Uri.parse("upi://pay")
-
-        val activities =
-            requireContext()
-                .packageManager
-                .queryIntentActivities(
-                    intent,
-                    0
-                )
+        val activities = requireContext()
+            .packageManager
+            .queryIntentActivities(intent, 0)
 
         activities.forEach {
-
             apps.add(
-
                 UpiApp(
-
-                    appName =
-                        it.loadLabel(
-                            requireContext()
-                                .packageManager
-                        ).toString(),
-
-                    packageName =
-                        it.activityInfo.packageName,
-
-                    icon =
-                        it.loadIcon(
-                            requireContext()
-                                .packageManager
-                        )
+                    appName = it.loadLabel(requireContext().packageManager).toString(),
+                    packageName = it.activityInfo.packageName,
+                    icon = it.loadIcon(requireContext().packageManager)
                 )
             )
         }
@@ -230,195 +135,92 @@ class PaymentFragment : Fragment(),  com.razorpay.PaymentResultListener {
         return apps
     }
 
+    // -----------------------------
+    // CREATE PAYMENT SESSION
+    // -----------------------------
     private fun createPaymentSession() {
-        Log.d(
-            "API_TEST",
-            "CREATE PAYMENT SESSION CALLED"
-        )
 
-        Log.d(
-            "PAY_CLICK",
-            "isPaymentInProgress = $isPaymentInProgress"
-        )
-        if (isPaymentInProgress) {
-            return
-        }
+        if (isPaymentInProgress) return
         isPaymentInProgress = true
 
-        val app = selectedUpiApp
-
-        if (app == null) {
-
+        val app = selectedUpiApp ?: run {
             isPaymentInProgress = false
-
             return
         }
 
-        val checkout =
-            activity as CheckoutActivity
-
-        val address =
-            checkout.selectedAddressForCheckout
-
-        if (address == null) {
-
+        val checkoutActivity = activity as CheckoutActivity
+        val address = checkoutActivity.selectedAddressForCheckout ?: run {
             isPaymentInProgress = false
-
             return
         }
 
-        val token =
-            TokenManager(
-                requireContext()
-            ).getToken()
+        val token = TokenManager(requireContext()).getToken()
 
         lifecycleScope.launch {
 
             try {
 
-                val response =
-                    RetrofitClient
-                        .userApi
-                        .createPaymentSession(
+                val response = RetrofitClient.userApi.createPaymentSession(
+                    "Bearer $token",
+                    CreatePaymentSessionRequest(
+                        addressId = address.id,
+                        paymentMethod = "UPI",
+                        upiAppPackage = app.packageName
+                    )
+                )
 
-                            "Bearer $token",
-
-                            CreatePaymentSessionRequest(
-
-                                addressId =
-                                    address.id,
-
-                                paymentMethod =
-                                    "UPI",
-
-                                upiAppPackage =
-                                    app.packageName
-                            )
-                        )
-
-                if (
-                    response.isSuccessful &&
-                    response.body() != null
-                ) {
+                if (response.isSuccessful && response.body() != null) {
 
                     val body = response.body()!!
 
-                    Log.d(
-                        "PAYMENT_RESPONSE",
-                        body.toString()
-                    )
-
-                    Log.d(
-                        "PAYMENT_DEBUG",
-                        "paymentData = ${body.paymentData}"
-                    )
-
-                    Log.d(
-                        "PAYMENT_DEBUG",
-                        "merchantUpiId = ${body.merchantUpiId}"
-                    )
-
-                    Log.d(
-                        "PAYMENT_DEBUG",
-                        "paymentMethod = ${body.paymentMethod}"
-                    )
-
-                    Log.d(
-                        "PAYMENT_DEBUG",
-                        "razorpayKey = ${body.razorpayKey}"
-                    )
-
-                    val paymentData = body.paymentData
-
-                    if (paymentData == null) {
-
+                    val paymentData = body.paymentData ?: run {
                         isPaymentInProgress = false
-
-                        Toast.makeText(
-                            requireContext(),
-                            "Payment data missing",
-                            Toast.LENGTH_LONG
-                        ).show()
-
+                        Toast.makeText(requireContext(), "Payment data missing", Toast.LENGTH_SHORT).show()
                         return@launch
                     }
 
-                    checkout.currentPaymentSession =
-
-                        PaymentSession(
-
-                            orderId = body.orderId ?: "",
-
-                            paymentSessionId =
-                                body.paymentSessionId ?: "",
-
-                            gatewayOrderId =
-                                paymentData.gatewayOrderId ?: "",
-
-                            amount =
-                                paymentData.amount ?: 0,
-
-                            currency =
-                                paymentData.currency ?: "INR",
-
-                            selectedUpiPackage =
-                                app.packageName,
-
-                            merchantUpiId =
-                                body.merchantUpiId ?: ""
-                        )
+                    checkoutActivity.currentPaymentSession = PaymentSession(
+                        orderId = body.orderId ?: "",
+                        paymentSessionId = body.paymentSessionId ?: "",
+                        gatewayOrderId = paymentData.gatewayOrderId ?: "",
+                        amount = paymentData.amount ?: 0,
+                        currency = paymentData.currency ?: "INR",
+                        selectedUpiPackage = app.packageName,
+                        merchantUpiId = body.merchantUpiId ?: ""
+                    )
 
                     openRazorpayCheckout()
 
                 } else {
                     isPaymentInProgress = false
-
-                    Toast.makeText(
-                        requireContext(),
-                        "Unable to create payment session",
-                        Toast.LENGTH_LONG
-                    ).show()
-
-                    Log.e(
-                        "PAYMENT_SESSION",
-                        "CODE = ${response.code()}"
-                    )
-
-                    Log.e(
-                        "PAYMENT_SESSION",
-                        "ERROR = ${response.errorBody()?.string()}"
-                    )
-
-                    Toast.makeText(
-                        requireContext(),
-                        "CODE = ${response.code()}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(requireContext(), "Order create failed", Toast.LENGTH_SHORT).show()
+                    Log.e("PAYMENT", response.errorBody()?.string().toString())
                 }
 
             } catch (e: Exception) {
                 isPaymentInProgress = false
-
-                Log.e(
-                    "PAYMENT_SESSION",
-                    e.toString()
-                )
-
-                e.printStackTrace()
+                Log.e("PAYMENT", e.message.toString())
             }
         }
     }
 
+    // -----------------------------
+    // GET RAZORPAY KEY FROM BACKEND
+    // -----------------------------
     private suspend fun getRazorpayKey(): String? {
         val token = TokenManager(requireContext()).getToken()
 
-        val response = RetrofitClient.userApi.getRazorpayConfig("Bearer $token")
-
-        return if (response.isSuccessful) {
-            response.body()?.razorpayKey
-        } else null
+        return try {
+            val res = RetrofitClient.userApi.getRazorpayConfig("Bearer $token")
+            if (res.isSuccessful) res.body()?.razorpayKey else null
+        } catch (e: Exception) {
+            null
+        }
     }
 
+    // -----------------------------
+    // OPEN RAZORPAY
+    // -----------------------------
     private fun openRazorpayCheckout() {
 
         lifecycleScope.launch {
@@ -426,7 +228,8 @@ class PaymentFragment : Fragment(),  com.razorpay.PaymentResultListener {
             val key = getRazorpayKey()
 
             if (key.isNullOrEmpty()) {
-                Toast.makeText(requireContext(), "Payment config error", Toast.LENGTH_SHORT).show()
+                isPaymentInProgress = false
+                Toast.makeText(requireContext(), "Razorpay key missing", Toast.LENGTH_SHORT).show()
                 return@launch
             }
 
@@ -444,81 +247,37 @@ class PaymentFragment : Fragment(),  com.razorpay.PaymentResultListener {
                 options.put("description", "Order Payment")
                 options.put("order_id", session.gatewayOrderId)
                 options.put("currency", "INR")
-                options.put("amount", session.amount.toString())
+
+                // IMPORTANT: paise me hota hai Razorpay
+                options.put("amount", session.amount)
 
                 val prefill = JSONObject()
                 prefill.put("email", "test@example.com")
-                prefill.put("contact", "7584818990")
+                prefill.put("contact", "9999999999")
 
                 options.put("prefill", prefill)
 
                 checkout.open(requireActivity(), options)
 
             } catch (e: Exception) {
-                Log.e("RAZORPAY", "Error: ${e.message}")
-            }
-        }
-    }
-
-    private fun openSuccessScreen() {
-        isPaymentInProgress = false
-        pollingJob?.cancel()
-
-        Toast.makeText(
-            requireContext(),
-            "Order Confirmed 🎉",
-            Toast.LENGTH_LONG
-        ).show()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Agar payment in progress hai, toh wapas aane par status check karo
-        if (isPaymentInProgress) {
-            checkCurrentPaymentStatus()
-        }
-    }
-
-    private fun checkCurrentPaymentStatus() {
-        val checkout = activity as CheckoutActivity
-        val session = checkout.currentPaymentSession ?: return
-        val token = TokenManager(requireContext()).getToken()
-
-        lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.userApi.getPaymentStatus("Bearer $token", session.paymentSessionId)
-                if (response.isSuccessful && response.body()?.status == "SUCCESS") {
-                    openSuccessScreen()
-                }
-            } catch (e: Exception) {
-                Log.e("RESUME_CHECK", "Status check failed")
+                isPaymentInProgress = false
+                Log.e("RAZORPAY", e.message.toString())
             }
         }
     }
 
     override fun onPaymentSuccess(razorpayPaymentId: String?) {
-
-        Log.d("RAZORPAY", "SUCCESS: $razorpayPaymentId")
-
+        isPaymentInProgress = false
         Toast.makeText(requireContext(), "Payment Success", Toast.LENGTH_SHORT).show()
-
-        // NO POLLING NEEDED
-        openSuccessScreen()
     }
 
     override fun onPaymentError(code: Int, response: String?) {
-
-        Log.e("RAZORPAY", "FAILED: $response")
-
-        Toast.makeText(requireContext(), "Payment Failed", Toast.LENGTH_SHORT).show()
-
         isPaymentInProgress = false
+        Toast.makeText(requireContext(), "Payment Failed", Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroyView() {
-
         pollingJob?.cancel()
-
         super.onDestroyView()
     }
 }

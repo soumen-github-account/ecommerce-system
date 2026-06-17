@@ -20,36 +20,42 @@ export const getRazorpayConfig = async (req, res) => {
 };
 
 export const createOrder = async (req, res) => {
-
     try {
-
         const {
             items,
-            totalAmount
+            totalAmount,
+            addressId,
+            paymentMethod
         } = req.body;
+
+        if (!items || !items.length) {
+            return res.status(400).json({
+                success: false,
+                message: "Items required"
+            });
+        }
 
         const order = await Order.create({
             userId: req.user.id,
             items,
             totalAmount,
-            orderStatus: "PENDING_PAYMENT",
+            addressId,              // ✅ FIX
+            paymentMethod,          // ✅ FIX
+            orderStatus: "INITIATED",
             paymentStatus: "PENDING"
         });
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             orderId: order._id
         });
 
     } catch (error) {
-
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
-
 };
 
 export const createPaymentSession = async (req, res) => {
