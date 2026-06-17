@@ -1,525 +1,232 @@
-import Razorpay from "razorpay";
+
+import axios from "axios";
 import { Order } from "../models/OrderModel.js";
-import { Product } from "../models/ProductModel.js";
-import { Cart } from "../models/CartModel.js";
-import { generateSessionId } from "../utils/generateSessionId.js";
 import { PaymentSession } from "../models/PaymentSession.js";
-import { Address } from "../models/AddressModel.js";
-import { processPaymentMethod } from "../services/paymentDecisionService.js";
+import crypto from "crypto";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
 
-export const createPaymentSession = async (req, res) => {
-try {
-    console.log(
-        "CREATE PAYMENT SESSION API HIT"
-    );
-
-    const userId = req.user.id;
-
-    const {
-        addressId,
-        paymentMethod,
-        upiAppPackage
-    } = req.body;
-
-    // ==========================
-    // VALIDATE PAYMENT METHOD
-    // ==========================
-
-    const allowedMethods = [
-        "UPI",
-        "CARD",
-        "COD"
-    ];
-
-    if (
-        !allowedMethods.includes(
-            paymentMethod
-        )
-    ) {
-
-        return res.status(400).json({
-
-            success: false,
-            message: "Invalid payment method"
-        });
-    }
-
-    // ==========================
-    // CHECK EXISTING ACTIVE SESSION
-    // ==========================
-
-    const existingSession =
-        await PaymentSession.findOne({
-
-            userId,
-
-            status: {
-                $in: [
-                    "CREATED",
-                    "PENDING"
-                ]
-            },
-
-            expiresAt: {
-                $gt: new Date()
-            }
-        });
-
-    if (existingSession) {
-
-        return res.status(200).json({
-
+export const getRazorpayConfig = async (req, res) => {
+    try {
+        res.json({
             success: true,
-            reused: true,
-
-            orderId:
-                existingSession.orderId,
-
-            paymentSessionId:
-                existingSession.sessionId,
-
-            paymentMethod:
-                existingSession.paymentMethod,
-
-            paymentData: {
-
-                gatewayOrderId:
-                    existingSession.gatewayOrderId,
-
-                amount:
-                    existingSession.amount * 100,
-
-                currency:
-                    existingSession.currency
-            },
-
-            merchantUpiId:
-                process.env.UPI_ID,
-
-            razorpayKey:
-                process.env.RAZORPAY_KEY_ID
+            razorpayKey: process.env.RAZORPAY_KEY_ID
         });
-    }
-
-    // ==========================
-    // VALIDATE ADDRESS
-    // ==========================
-
-    const address =
-        await Address.findOne({
-
-            _id: addressId,
-            user: userId
-        });
-
-    if (!address) {
-
-        return res.status(404).json({
-
+    } catch (error) {
+        res.status(500).json({
             success: false,
-            message: "Address not found"
+            message: error.message
         });
     }
+};
 
-    // ==========================
-    // LOAD CART
-    // ==========================
-
-    const cartItems =
-        await Cart.find({
-            user: userId
-        }).populate(
-            "product"
-        );
-
-    if (
-        !cartItems ||
-        cartItems.length === 0
-    ) {
-
-        return res.status(400).json({
-
-            success: false,
-            message: "Cart is empty"
-        });
-    }
-
-    // ==========================
-    // CALCULATE AMOUNT
-    // ==========================
-
-    let totalAmount = 0;
-
-    const orderItems = [];
-
-    for (const item of cartItems) {
-
-        if (
-            !item.product ||
-            !item.product.price ||
-            item.product.price.length === 0
-        ) {
-            continue;
-        }
-
-        // ==========================
-        // STOCK VALIDATION
-        // ==========================
-
-        if (
-            item.product.stock <
-            item.quantity
-        ) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    `${item.product.name} is out of stock`
-            });
-        }
-
-        const selectedPrice =
-            item.product.price[0];
-
-        totalAmount +=
-            selectedPrice *
-            item.quantity;
-
-        orderItems.push({
-
-            productId:
-                item.product._id,
-
-            quantity:
-                item.quantity,
-
-            price:
-                selectedPrice,
-
-            variantId:
-                item.varient
-        });
-    }
-
-    if (
-        orderItems.length === 0
-    ) {
-
-        return res.status(400).json({
-
-            success: false,
-            message: "No valid products found"
-        });
-    }
-
-    // ==========================
-    // CREATE ORDER
-    // ==========================
-
-    const order =
-        await Order.create({
-
-            userId,
-
-            items:
-                orderItems,
-
-            addressId,
-
-            totalAmount,
-
-            paymentMethod,
-
-            paymentStatus:
-                "PENDING",
-
-            orderStatus:
-                "INITIATED"
-        });
-
-    // ==========================
-    // CREATE SESSION
-    // ==========================
-
-    const sessionId =
-        generateSessionId();
-
-    const paymentSession =
-        await PaymentSession.create({
-
-            sessionId,
-
-            userId,
-
-            orderId:
-                order._id,
-
-            amount:
-                totalAmount,
-
-            paymentMethod,
-
-            upiAppPackage,
-
-            status:
-                "CREATED"
-        });
-
-    order.paymentSessionId =
-        paymentSession._id;
-
-    await order.save();
-
-    // ==========================
-    // CREATE GATEWAY ORDER
-    // ==========================
-
-    let paymentData;
+export const createOrder = async (req, res) => {
 
     try {
 
-        paymentData =
-            await processPaymentMethod({
+        const {
+            items,
+            totalAmount
+        } = req.body;
 
-                paymentMethod,
-
-                amount:
-                    totalAmount,
-
-                sessionId,
-
-                orderId:
-                    order._id
-            });
-
-        console.log(
-            "PAYMENT DATA = ",
-            paymentData
-        );
-
-    } catch (gatewayError) {
-
-        console.error(
-            "Gateway Error:",
-            gatewayError
-        );
-
-        paymentSession.status =
-            "FAILED";
-
-        await paymentSession.save();
-
-        order.paymentStatus =
-            "FAILED";
-
-        await order.save();
-
-        return res.status(500).json({
-
-            success: false,
-
-            message:
-                "Failed to create payment session"
+        const order = await Order.create({
+            userId: req.user.id,
+            items,
+            totalAmount,
+            orderStatus: "PENDING_PAYMENT",
+            paymentStatus: "PENDING"
         });
+
+        res.status(201).json({
+            success: true,
+            orderId: order._id
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
     }
-
-    // ==========================
-    // SAVE GATEWAY DATA
-    // ==========================
-
-    if (
-        paymentData?.gatewayOrderId
-    ) {
-
-        paymentSession.gatewayOrderId =
-            paymentData.gatewayOrderId;
-
-        paymentSession.status =
-            "PENDING";
-
-        await paymentSession.save();
-    }
-
-    // ==========================
-    // RESPONSE
-    // ==========================
-
-    const responseData = {
-        test: "HELLO_BRO",
-        success: true,
-
-        orderId: order._id,
-
-        paymentSessionId: paymentSession.sessionId,
-
-        paymentMethod,
-
-        paymentData,
-
-        merchantUpiId: process.env.UPI_ID,
-
-        razorpayKey: process.env.RAZORPAY_KEY_ID
-    };
-
-    console.log(
-        "FINAL RESPONSE =",
-        JSON.stringify(responseData, null, 2)
-    );
-
-    console.log(
-        "SESSION CREATED:",
-        sessionId
-    );
-
-    console.log(
-        "PAYMENT METHOD:",
-        paymentMethod
-    );
-
-    console.log(
-        "PAYMENT DATA:",
-        paymentData
-    );
-
-    console.log(
-        JSON.stringify(
-            {
-                success: true,
-                orderId: order._id,
-                paymentSessionId: paymentSession.sessionId,
-                paymentMethod,
-                paymentData,
-                merchantUpiId: process.env.UPI_ID,
-                razorpayKey: process.env.RAZORPAY_KEY_ID
-            },
-            null,
-            2
-        )
-    );
-
-    return res.status(201).json(responseData);
-
-} catch (error) {
-
-    console.error(
-        "CREATE PAYMENT SESSION ERROR:",
-        error
-    );
-
-    return res.status(500).json({
-
-        success: false,
-
-        message:
-            "Failed to create payment session"
-    });
-}
 
 };
 
-// ======================================================
-// GET PAYMENT STATUS
-// ======================================================
+export const createPaymentSession = async (req, res) => {
+    try {
 
-export const getPaymentStatus =
-async (req, res) => {
-try {
+        const { orderId } = req.body;
 
-    const { sessionId } =
-        req.params;
+        const order = await Order.findById(orderId);
 
-    let session =
-        await PaymentSession.findOne({
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            });
+        }
 
-            sessionId
-
-        }).select(
-            "status orderId amount paymentMethod expiresAt"
-        );
-
-    if (!session) {
-
-        return res.status(404).json({
-
-            success: false,
-
-            message:
-                "Payment session not found"
-        });
-    }
-
-    // ==========================
-    // EXPIRE SESSION
-    // ==========================
-
-    if (
-
-        (
-            session.status === "CREATED" ||
-
-            session.status === "PENDING"
-        ) &&
-
-        session.expiresAt &&
-
-        session.expiresAt < new Date()
-    ) {
-
-        session.status =
-            "EXPIRED";
-
-        await session.save();
-
-        await Order.findByIdAndUpdate(
-
-            session.orderId,
-
+        const response = await axios.post(
+            "https://api.cashfree.com/pg/orders",
             {
-                paymentStatus:
-                    "FAILED"
+                order_id: order._id.toString(),
+                order_amount: order.totalAmount,
+                order_currency: "INR",
+
+                customer_details: {
+                    customer_id: order.userId.toString(),
+                    customer_name: "Test User",
+                    customer_email: "test@example.com",
+                    customer_phone: "7584818990"
+                }
+            },
+            {
+                headers: {
+                    "x-client-id": process.env.CASHFREE_CLIENT_ID,
+                    "x-client-secret": process.env.CASHFREE_CLIENT_SECRET,
+                    "x-api-version": "2023-08-01",
+                    "Content-Type": "application/json"
+                }
             }
         );
 
-        session =
-            await PaymentSession.findById(
-                session._id
-            );
+        console.log("Cashfree Response:");
+        console.log(response.data);
+        console.log("CF ORDER =", response.data.cf_order_id);
+        console.log("SESSION ID =", response.data.payment_session_id);
+        const session = await PaymentSession.create({
+            orderId: order._id,
+
+            cashfreeOrderId:
+                response.data.cf_order_id,
+
+            paymentSessionId:
+                response.data.payment_session_id,
+
+            amount: order.totalAmount,
+
+            status: "CREATED"
+        });
+
+        order.paymentSessionId = session._id;
+        await order.save();
+        console.log(
+            "cf_order_id =",
+            response.data.cf_order_id
+        );
+
+        console.log(
+            "payment_session_id =",
+            response.data.payment_session_id
+        );
+
+        res.json({
+            success: true,
+
+            orderId:
+                order._id.toString(),
+
+            paymentSessionId: response.data.payment_session_id
+        });
+
+    } catch (error) {
+
+        console.log("CREATE SESSION ERROR");
+
+        if (error.response) {
+            console.log(error.response.data);
+        } else {
+            console.log(error);
+        }
+
+        res.status(500).json({
+            success: false,
+            message: error.response?.data || error.message
+        });
     }
+};
 
-    return res.json({
+export const cashfreeWebhook = async (req, res) => {
+    try {
+        const signature = req.headers["x-webhook-signature"];
+        const timestamp = req.headers["x-webhook-timestamp"];
+        const rawBody = JSON.stringify(req.body);
 
-        success: true,
+        // Verify Signature (Use your Cashfree Secret Key)
+        const bodyToVerify = timestamp + rawBody;
+        const expectedSignature = crypto
+            .createHmac("sha256", process.env.CASHFREE_SECRET_KEY)
+            .update(bodyToVerify)
+            .digest("base64");
 
-        status:
-            session.status,
+        if (signature !== expectedSignature) {
+            return res.status(401).send("Invalid Signature");
+        }
 
-        orderId:
-            session.orderId,
+        // Proceed with your logic
+        const event = req.body;
+        if (event.type === "PAYMENT_SUCCESS_WEBHOOK") {
+            const cfOrderId = event.data.order.order_id;
 
-        amount:
-            session.amount,
+        const paymentSession =
+            await PaymentSession.findOne({
+                cashfreeOrderId: cfOrderId
+            });
 
-        paymentMethod:
-            session.paymentMethod
-    });
+        if (!paymentSession) {
+            return res.status(404).send("Session not found");
+        }
 
-} catch (error) {
+        await PaymentSession.findByIdAndUpdate(
+            paymentSession._id,
+            {
+                status: "SUCCESS"
+            }
+        );
 
-    console.error(error);
+        await Order.findByIdAndUpdate(
+            paymentSession.orderId,
+            {
+                paymentStatus: "SUCCESS",
+                orderStatus: "CONFIRMED"
+            }
+        );
+                    
+        }
+        res.status(200).send("OK");
+    } catch (error) {
+        res.status(500).send();
+    }
+};
 
-    return res.status(500).json({
 
-        success: false,
+export const getPaymentStatus = async (req, res) => {
+    try {
+        // const { orderId } = req.params;
+        // const order = await Order.findById(orderId);
+        
+        // if (!order) return res.status(404).json({ success: false });
+        
+        const { sessionId } = req.params;
+        let session = await PaymentSession.findOne({ sessionId });
 
-        message:
-            "Failed to fetch payment status"
-    });
-}
+        // Agar session PENDING hai, toh Razorpay API se confirm karo
+        if (session.status === "PENDING") {
+            const razorpayOrder = await razorpay.orders.fetch(session.gatewayOrderId);
+            // Razorpay logic: check razorpayOrder.status
+            if (razorpayOrder.status === 'paid') {
+                session.status = "SUCCESS";
+                await session.save();
+                // Trigger stock deduction logic here (ensure it runs only once!)
+            }
+        }
+
+        res.json({
+            success: true,
+            orderStatus: order.orderStatus, // "CONFIRMED" or "PENDING_PAYMENT"
+            paymentStatus: order.paymentStatus
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
