@@ -235,6 +235,26 @@ class PaymentFragment : Fragment() {
         return apps
     }
 
+    private fun initiateUpiPayment(appPackage: String, upiLink: String) {
+        try {
+            val uri = Uri.parse(upiLink)
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+
+            // Yeh line ensure karti hai ki direct wahi UPI app khule
+            intent.setPackage(appPackage)
+
+            // Success listener ke liye result launcher use karein
+            upiLauncher.launch(intent)
+
+            // Payment in progress state set karein
+            isPaymentInProgress = true
+            startPolling()
+        } catch (e: Exception) {
+            Log.e("UPI_ERROR", "Error launching UPI: ${e.message}")
+            Toast.makeText(requireContext(), "App not found or not supported", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun createPaymentSession() {
         Log.d(
             "API_TEST",
@@ -415,84 +435,35 @@ class PaymentFragment : Fragment() {
     }
 
     private fun launchSelectedUpiApp() {
+        val app = selectedUpiApp ?: return
+        val checkout = activity as CheckoutActivity
+        val session = checkout.currentPaymentSession ?: return
+        val amountString = String.format("%.2f", session.amount / 100.0)
 
-        val app =
-            selectedUpiApp
-                ?: return
 
-        val checkout =
-            activity as CheckoutActivity
+        val upiUri = Uri.Builder()
+            .scheme("upi")
+            .authority("pay")
+            .appendQueryParameter("pa", session.merchantUpiId)
+            .appendQueryParameter("pn", "City Basket")
+            .appendQueryParameter("tr", session.gatewayOrderId)
+            .appendQueryParameter("tn", "Order${session.orderId.takeLast(6)}")
+            .appendQueryParameter("am", amountString)
+            .appendQueryParameter("cu", "INR")
+            .appendQueryParameter("mc", "5411")
+            .build()
 
-        val session =
-            checkout.currentPaymentSession
-                ?: return
+        val intent = Intent(Intent.ACTION_VIEW, upiUri)
+        intent.setPackage(app.packageName)
 
-        val amount =
-            session.amount / 100.0
-
-        val upiUri =
-            Uri.Builder()
-                .scheme("upi")
-                .authority("pay")
-                .appendQueryParameter(
-                    "pa",
-                    session.merchantUpiId
-                )
-                .appendQueryParameter(
-                    "pn",
-                    "City Basket"
-                )
-                .appendQueryParameter(
-                    "tn",
-                    session.orderId
-                )
-                .appendQueryParameter(
-                    "am",
-                    amount.toString()
-                )
-                .appendQueryParameter(
-                    "cu",
-                    "INR"
-                )
-                .build()
-
-        Log.d(
-            "UPI_DEBUG",
-            "UPI = ${session.merchantUpiId}"
-        )
-
-        Log.d(
-            "UPI_DEBUG",
-            upiUri.toString()
-        )
-
-        val intent =
-            Intent(
-                Intent.ACTION_VIEW,
-                upiUri
-            )
-
-        intent.setPackage(
-            app.packageName
-        )
+        Log.d("UPI_FINAL_URI", upiUri.toString())
 
         try {
-
-            upiLauncher.launch(
-                intent
-            )
-
+            upiLauncher.launch(intent)
         } catch (e: Exception) {
-            isPaymentInProgress = false
-
-            Toast.makeText(
-                requireContext(),
-                "Unable To Open ${app.appName}",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(requireContext(), "UPI App failed to open", Toast.LENGTH_SHORT).show()
         }
     }
-
     private fun startPolling() {
         pollingJob?.cancel()
 
@@ -604,6 +575,31 @@ class PaymentFragment : Fragment() {
             "Order Confirmed 🎉",
             Toast.LENGTH_LONG
         ).show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Agar payment in progress hai, toh wapas aane par status check karo
+        if (isPaymentInProgress) {
+            checkCurrentPaymentStatus()
+        }
+    }
+
+    private fun checkCurrentPaymentStatus() {
+        val checkout = activity as CheckoutActivity
+        val session = checkout.currentPaymentSession ?: return
+        val token = TokenManager(requireContext()).getToken()
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.userApi.getPaymentStatus("Bearer $token", session.paymentSessionId)
+                if (response.isSuccessful && response.body()?.status == "SUCCESS") {
+                    openSuccessScreen()
+                }
+            } catch (e: Exception) {
+                Log.e("RESUME_CHECK", "Status check failed")
+            }
+        }
     }
 
     override fun onDestroyView() {
