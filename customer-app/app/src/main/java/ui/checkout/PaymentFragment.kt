@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ecommerce.citybasket.R
+import com.razorpay.Checkout
 import data.model.payment.PaymentSession
 import data.model.upi.UpiApp
 import data.remote.api.RetrofitClient
@@ -25,9 +26,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import utils.TokenManager
 import kotlinx.coroutines.Job
+import org.json.JSONObject
 
 
-class PaymentFragment : Fragment() {
+class PaymentFragment : Fragment(),  com.razorpay.PaymentResultListener {
     private lateinit var layoutUpiHeader: LinearLayout
     private lateinit var layoutCard: LinearLayout
     private lateinit var layoutCod: LinearLayout
@@ -44,13 +46,6 @@ class PaymentFragment : Fragment() {
     private var selectedUpiApp: UpiApp? = null
     private var isPaymentInProgress = false
     private var pollingJob: Job? = null
-
-    private val upiLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) {
-            startPolling()
-        }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -235,26 +230,6 @@ class PaymentFragment : Fragment() {
         return apps
     }
 
-    private fun initiateUpiPayment(appPackage: String, upiLink: String) {
-        try {
-            val uri = Uri.parse(upiLink)
-            val intent = Intent(Intent.ACTION_VIEW, uri)
-
-            // Yeh line ensure karti hai ki direct wahi UPI app khule
-            intent.setPackage(appPackage)
-
-            // Success listener ke liye result launcher use karein
-            upiLauncher.launch(intent)
-
-            // Payment in progress state set karein
-            isPaymentInProgress = true
-            startPolling()
-        } catch (e: Exception) {
-            Log.e("UPI_ERROR", "Error launching UPI: ${e.message}")
-            Toast.makeText(requireContext(), "App not found or not supported", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun createPaymentSession() {
         Log.d(
             "API_TEST",
@@ -393,7 +368,7 @@ class PaymentFragment : Fragment() {
                                 body.merchantUpiId ?: ""
                         )
 
-                    launchSelectedUpiApp()
+                    openRazorpayCheckout()
 
                 } else {
                     isPaymentInProgress = false
@@ -434,135 +409,54 @@ class PaymentFragment : Fragment() {
         }
     }
 
-    private fun launchSelectedUpiApp() {
-        val app = selectedUpiApp ?: return
-        val checkout = activity as CheckoutActivity
-        val session = checkout.currentPaymentSession ?: return
-        val amountString = String.format("%.2f", session.amount / 100.0)
+    private suspend fun getRazorpayKey(): String? {
+        val token = TokenManager(requireContext()).getToken()
 
+        val response = RetrofitClient.userApi.getRazorpayConfig("Bearer $token")
 
-        val upiUri = Uri.Builder()
-            .scheme("upi")
-            .authority("pay")
-            .appendQueryParameter("pa", session.merchantUpiId)
-            .appendQueryParameter("pn", "City Basket")
-            .appendQueryParameter("tr", session.gatewayOrderId)
-            .appendQueryParameter("tn", "Order${session.orderId.takeLast(6)}")
-            .appendQueryParameter("am", amountString)
-            .appendQueryParameter("cu", "INR")
-            .appendQueryParameter("mc", "5411")
-            .build()
-
-        val intent = Intent(Intent.ACTION_VIEW, upiUri)
-        intent.setPackage(app.packageName)
-
-        Log.d("UPI_FINAL_URI", upiUri.toString())
-
-        try {
-            upiLauncher.launch(intent)
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), "UPI App failed to open", Toast.LENGTH_SHORT).show()
-        }
+        return if (response.isSuccessful) {
+            response.body()?.razorpayKey
+        } else null
     }
-    private fun startPolling() {
-        pollingJob?.cancel()
 
-        val checkout =
-            activity as CheckoutActivity
+    private fun openRazorpayCheckout() {
 
-        val session =
-            checkout.currentPaymentSession
-                ?: return
+        lifecycleScope.launch {
 
-        val token =
-            TokenManager(
-                requireContext()
-            ).getToken()
+            val key = getRazorpayKey()
 
-        pollingJob = lifecycleScope.launch {
-
-            repeat(20) {
-
-                delay(3000)
-
-                try {
-
-                    val response =
-                        RetrofitClient
-                            .userApi
-                            .getPaymentStatus(
-
-                                "Bearer $token",
-
-                                session.paymentSessionId
-                            )
-
-                    if (
-                        response.isSuccessful &&
-                        response.body() != null
-                    ) {
-
-                        val body =
-                            response.body()!!
-
-                        Log.d(
-                            "PAYMENT_STATUS",
-                            body.status
-                        )
-
-                        when (
-                            body.status
-                        ) {
-
-                            "SUCCESS" -> {
-
-                                openSuccessScreen()
-
-                                return@launch
-                            }
-
-                            "EXPIRED" -> {
-
-                                isPaymentInProgress = false
-
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Payment Session Expired",
-                                    Toast.LENGTH_LONG
-                                ).show()
-
-                                return@launch
-                            }
-
-                            "FAILED" -> {
-                                isPaymentInProgress = false
-                                pollingJob?.cancel()
-
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Payment Failed",
-                                    Toast.LENGTH_LONG
-                                ).show()
-
-                                return@launch
-                            }
-                        }
-                    }
-
-                } catch (e: Exception) {
-
-                    e.printStackTrace()
-                }
+            if (key.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "Payment config error", Toast.LENGTH_SHORT).show()
+                return@launch
             }
 
-            isPaymentInProgress = false
-            pollingJob?.cancel()
+            Checkout.preload(requireContext())
 
-            Toast.makeText(
-                requireContext(),
-                "Payment Verification Timeout",
-                Toast.LENGTH_LONG
-            ).show()
+            val checkout = Checkout()
+            checkout.setKeyID(key)
+
+            val session = (activity as CheckoutActivity).currentPaymentSession ?: return@launch
+
+            try {
+                val options = JSONObject()
+
+                options.put("name", "City Basket")
+                options.put("description", "Order Payment")
+                options.put("order_id", session.gatewayOrderId)
+                options.put("currency", "INR")
+                options.put("amount", session.amount.toString())
+
+                val prefill = JSONObject()
+                prefill.put("email", "test@example.com")
+                prefill.put("contact", "7584818990")
+
+                options.put("prefill", prefill)
+
+                checkout.open(requireActivity(), options)
+
+            } catch (e: Exception) {
+                Log.e("RAZORPAY", "Error: ${e.message}")
+            }
         }
     }
 
@@ -600,6 +494,25 @@ class PaymentFragment : Fragment() {
                 Log.e("RESUME_CHECK", "Status check failed")
             }
         }
+    }
+
+    override fun onPaymentSuccess(razorpayPaymentId: String?) {
+
+        Log.d("RAZORPAY", "SUCCESS: $razorpayPaymentId")
+
+        Toast.makeText(requireContext(), "Payment Success", Toast.LENGTH_SHORT).show()
+
+        // NO POLLING NEEDED
+        openSuccessScreen()
+    }
+
+    override fun onPaymentError(code: Int, response: String?) {
+
+        Log.e("RAZORPAY", "FAILED: $response")
+
+        Toast.makeText(requireContext(), "Payment Failed", Toast.LENGTH_SHORT).show()
+
+        isPaymentInProgress = false
     }
 
     override fun onDestroyView() {

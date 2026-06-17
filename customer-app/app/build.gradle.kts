@@ -70,6 +70,6 @@ dependencies {
     implementation ("androidx.viewpager2:viewpager2:1.1.0")
     implementation ("me.relex:circleindicator:2.1.6")
     implementation ("com.github.bumptech.glide:glide:4.16.0")
-    implementation ("com.razorpay:checkout:1.6.38")
+    implementation ("com.razorpay:checkout:1.6.40")
     implementation ("com.google.code.gson:gson:2.10.1")
 }

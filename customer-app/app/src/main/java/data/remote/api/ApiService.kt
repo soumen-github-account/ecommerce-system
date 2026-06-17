@@ -10,6 +10,7 @@ import data.remote.response.AddressDeleteResponse
 import data.remote.response.CartResponse
 import data.remote.response.CreatePaymentSessionResponse
 import data.remote.response.PaymentStatusResponse
+import data.remote.response.RazorpayConfigResponse
 import data.remote.response.UserResponse
 import data.remote.response.WishlistResponse
 import retrofit2.Response
@@ -96,4 +97,9 @@ interface ApiService {
         @Path("sessionId")
         sessionId: String
     ): Response<PaymentStatusResponse>
+
+    @GET("api/payment/razorpay-config")
+    suspend fun getRazorpayConfig(
+        @Header("Authorization") token: String
+    ): Response<RazorpayConfigResponse>
 }
