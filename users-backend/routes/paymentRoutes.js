@@ -1,10 +1,12 @@
 import express from "express"
 import { protect } from "../middlewares/authMiddleware.js";
-import {createPaymentSession, getPaymentStatus } from "../controllers/paymentController.js";
+import {createPaymentSession, getPaymentStatus, getRazorpayConfig } from "../controllers/paymentController.js";
 import { razorpayWebhook } from "../controllers/paymentWebhookController.js";
 
 
 const router = express.Router();
+
+router.get("/razorpay-config", protect, getRazorpayConfig);
 
 router.post(
     "/create-session",
