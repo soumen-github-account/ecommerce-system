@@ -2,40 +2,53 @@ package ui.checkout
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.ecommerce.citybasket.MainActivity
 import com.ecommerce.citybasket.R
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class OrderSuccessActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_order_success)
 
-        val btnContinueShopping = findViewById<Button>(R.id.btnContinueShopping)
+        // Hardware back button handle
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    goToHome()
+                }
+            }
+        )
 
-        btnContinueShopping.setOnClickListener {
-            // 1. Intent banao MainActivity ke liye
-            val intent = Intent(this, MainActivity::class.java)
+        // Auto redirect after 3 seconds
+        lifecycleScope.launch {
 
-            // 2. 🔥 Flags lagao taaki checkout aur success ki saari purani activities stack se clear ho jayein
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            delay(3000)
 
-            // 3. Screen start karo
-            startActivity(intent)
-
-            // 4. Current success screen ko close karo
-            finish()
+            goToHome()
         }
     }
 
-    // User hardware back button dabaye toh bhi checkout process me wapas na ja paye
-    override fun onBackPressed() {
-        super.onBackPressed()
-        val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+    private fun goToHome() {
+
+        val intent = Intent(
+            this,
+            MainActivity::class.java
+        )
+
+        intent.flags =
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK
+
         startActivity(intent)
+
         finish()
     }
 }

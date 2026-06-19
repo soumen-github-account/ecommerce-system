@@ -196,23 +196,19 @@ export const razorpayWebhook = async (req, res) => {
     console.log("Webhook Hit");
 
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-
     const receivedSignature = req.headers["x-razorpay-signature"];
 
+    // 1. Signature Verification (Strict)
     const expectedSignature = crypto
-      .createHmac("sha256", webhookSecret)
-      .update(req.body)
-      .digest("hex");
+        .createHmac("sha256", webhookSecret)
+        .update(JSON.stringify(req.body)) // Ensure JSON string format
+        .digest("hex");
 
     if (expectedSignature !== receivedSignature) {
-      console.log("Invalid Signature");
-
-      return res.status(400).json({
-        success: false,
-        message: "Invalid signature",
-      });
+        console.error("Invalid Webhook Signature");
+        return res.status(400).json({ success: false, message: "Invalid signature" });
     }
-    
+
     const payload = JSON.parse(req.body.toString());
     const event = payload.event;
 
@@ -220,6 +216,12 @@ export const razorpayWebhook = async (req, res) => {
         const payment = payload.payload.payment.entity;
         const gatewayOrderId = payment.order_id;
         const gatewayPaymentId = payment.id;
+
+        const existingSession = await PaymentSession.findOne({ gatewayOrderId });
+        if (existingSession && existingSession.status === "SUCCESS") {
+            console.log("Duplicate Webhook received, skipping...");
+            return res.status(200).json({ success: true, message: "Already processed" });
+        }
 
         // Atomic Transaction Start
         const session = await mongoose.startSession();

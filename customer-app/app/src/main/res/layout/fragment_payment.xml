@@ -38,14 +38,10 @@
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
                     android:text="Recommended For You"
+                    android:textColor="@color/black"
                     android:textStyle="bold"
                     android:textSize="18sp"/>
 
-                <ImageView
-                    android:id="@+id/imgRecommendedArrow"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_arrow_down"/>
             </LinearLayout>
 
             <!-- UPI Header -->
@@ -71,6 +67,7 @@
                     android:layout_marginStart="12dp"
                     android:text="UPI"
                     android:textStyle="bold"
+                    android:textColor="@color/black"
                     android:textSize="18sp"/>
 
                 <ImageView
@@ -115,13 +112,15 @@
                         android:layout_height="wrap_content"
                         android:text="Credit / Debit Card"
                         android:textStyle="bold"
+                        android:textColor="@color/black"
                         android:textSize="18sp"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Add and secure cards as per RBI guidelines"
-                        android:textSize="12sp"/>
+                        android:textSize="12sp"
+                        android:textColor="#2A2A2A"/>
                 </LinearLayout>
 
                 <ImageView
@@ -131,6 +130,7 @@
                     android:src="@drawable/ic_arrow_down"/>
 
             </LinearLayout>
+
             <LinearLayout
                 android:id="@+id/layoutCardContent"
                 android:layout_width="match_parent"
@@ -144,6 +144,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:backgroundTint="@color/black"
+                    android:textColor="@color/white"
                     android:text="Continue With Card"/>
             </LinearLayout>
 
@@ -168,6 +169,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
                     android:text="Cash on Delivery"
+                    android:textColor="@color/black"
                     android:textStyle="bold"
                     android:textSize="18sp"/>
 
@@ -196,6 +198,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:backgroundTint="@color/black"
+                    android:textColor="@color/white"
                     android:text="Place Order"/>
             </LinearLayout>
 

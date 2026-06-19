@@ -1,8 +1,10 @@
-
+import mongoose from "mongoose";
 import axios from "axios";
 import { Order } from "../models/OrderModel.js";
 import { PaymentSession } from "../models/PaymentSession.js";
 import crypto from "crypto";
+import { v4 as uuidv4 } from "uuid";
+import {razorpay} from "../config/razorpay.js"
 
 
 export const getRazorpayConfig = async (req, res) => {
@@ -39,8 +41,8 @@ export const createOrder = async (req, res) => {
             userId: req.user.id,
             items,
             totalAmount,
-            addressId,              // ✅ FIX
-            paymentMethod,          // ✅ FIX
+            addressId,
+            paymentMethod,   
             orderStatus: "INITIATED",
             paymentStatus: "PENDING"
         });
@@ -61,7 +63,9 @@ export const createOrder = async (req, res) => {
 export const createPaymentSession = async (req, res) => {
     try {
 
-        const { orderId } = req.body;
+        const userId = req.user.id;
+
+        const { orderId, addressId, paymentMethod, upiAppPackage } = req.body;
 
         const order = await Order.findById(orderId);
 
@@ -72,82 +76,57 @@ export const createPaymentSession = async (req, res) => {
             });
         }
 
-        const response = await axios.post(
-            "https://api.cashfree.com/pg/orders",
-            {
-                order_id: order._id.toString(),
-                order_amount: order.totalAmount,
-                order_currency: "INR",
+        // 🔥 1. Create Razorpay Order FIRST
+        const razorpayOrder = await razorpay.orders.create({
+            amount: order.totalAmount * 100,
+            currency: "INR",
+            receipt: order._id.toString()
+        });
 
-                customer_details: {
-                    customer_id: order.userId.toString(),
-                    customer_name: "Test User",
-                    customer_email: "test@example.com",
-                    customer_phone: "7584818990"
-                }
-            },
-            {
-                headers: {
-                    "x-client-id": process.env.CASHFREE_CLIENT_ID,
-                    "x-client-secret": process.env.CASHFREE_CLIENT_SECRET,
-                    "x-api-version": "2023-08-01",
-                    "Content-Type": "application/json"
-                }
-            }
-        );
+        if (!razorpayOrder) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to create Razorpay order"
+            });
+        }
 
-        console.log("Cashfree Response:");
-        console.log(response.data);
-        console.log("CF ORDER =", response.data.cf_order_id);
-        console.log("SESSION ID =", response.data.payment_session_id);
+        // 🔥 2. Create Payment Session
         const session = await PaymentSession.create({
+            sessionId: uuidv4(),
+            userId,
             orderId: order._id,
-
-            cashfreeOrderId:
-                response.data.cf_order_id,
-
-            paymentSessionId:
-                response.data.payment_session_id,
-
             amount: order.totalAmount,
-
+            currency: "INR",
+            paymentMethod,
+            upiAppPackage,
+            gatewayOrderId: razorpayOrder.id, 
             status: "CREATED"
         });
 
         order.paymentSessionId = session._id;
         await order.save();
-        console.log(
-            "cf_order_id =",
-            response.data.cf_order_id
-        );
 
-        console.log(
-            "payment_session_id =",
-            response.data.payment_session_id
-        );
-
-        res.json({
+        return res.status(201).json({
             success: true,
 
-            orderId:
-                order._id.toString(),
+            paymentSessionId: session._id,
+            orderId: order._id,
 
-            paymentSessionId: response.data.payment_session_id
+            paymentData: {
+                gatewayOrderId: razorpayOrder.id,
+                amount: order.totalAmount * 100,
+                currency: "INR"
+            },
+
+            merchantUpiId: process.env.UPI_ID || null
         });
 
     } catch (error) {
+        console.error(error);
 
-        console.log("CREATE SESSION ERROR");
-
-        if (error.response) {
-            console.log(error.response.data);
-        } else {
-            console.log(error);
-        }
-
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: error.response?.data || error.message
+            message: error.message
         });
     }
 };

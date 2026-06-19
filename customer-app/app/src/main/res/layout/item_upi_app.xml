@@ -11,6 +11,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/white"
         android:orientation="vertical">
         <LinearLayout
             android:layout_width="match_parent"
@@ -23,6 +24,7 @@
             <RadioButton
                 android:id="@+id/radioSelect"
                 android:layout_width="wrap_content"
+                android:textColor="@color/black"
                 android:layout_height="wrap_content"/>
 
             <TextView
@@ -32,6 +34,7 @@
                 android:layout_weight="1"
                 android:layout_marginStart="12dp"
                 android:textSize="16sp"
+                android:textColor="@color/black"
                 android:textStyle="bold"/>
 
             <ImageView
@@ -47,6 +50,7 @@
             android:text="Pay Now"
             android:visibility="gone"
             android:backgroundTint="@color/black"
+            android:textColor="@color/white"
             android:layout_margin="8dp"/>
     </LinearLayout>
 

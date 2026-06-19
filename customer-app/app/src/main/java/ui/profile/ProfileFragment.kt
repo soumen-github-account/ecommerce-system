@@ -13,18 +13,22 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.ecommerce.citybasket.R
 import ui.auth.register.RegisterActivity
+import ui.checkout.OrderSuccessActivity
 import utils.TokenManager
+import viewmodel.SharedUserViewModel
 import viewmodel.UserViewModel
 
 class ProfileFragment : Fragment() {
 
     private lateinit var userViewModel: UserViewModel
+    private lateinit var sharedUserViewModel: SharedUserViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        sharedUserViewModel = ViewModelProvider(requireActivity())[SharedUserViewModel::class.java]
 
         val view = inflater.inflate(
             R.layout.fragment_profile,
@@ -72,15 +76,25 @@ class ProfileFragment : Fragment() {
             layoutRegister.visibility = View.VISIBLE
         }
 
-        userViewModel.user.observe(
-            viewLifecycleOwner
-        ) { user ->
+//        userViewModel.user.observe(
+//            viewLifecycleOwner
+//        ) { user ->
+//
+//            txtName.text =
+//                "${user.firstName} ${user.lastName}"
+//
+//            txtEmail.text =
+//                user.email ?: ""
+//        }
+        userViewModel.user.observe(viewLifecycleOwner) { user ->
 
-            txtName.text =
-                "${user.firstName} ${user.lastName}"
+            txtName.text = "${user.firstName} ${user.lastName}"
+            txtEmail.text = user.email ?: ""
 
-            txtEmail.text =
-                user.email ?: ""
+            sharedUserViewModel.setUser(
+                user.email,
+                user.phone
+            )
         }
 
         userViewModel.error.observe(
@@ -118,6 +132,10 @@ class ProfileFragment : Fragment() {
         )
 
         txtEditProfile.text = "Edit Profile"
+
+        layoutEditProfile.setOnClickListener {
+            startActivity(Intent(requireContext(), OrderSuccessActivity::class.java))
+        }
 
         val layoutOrders =
             view.findViewById<View>(R.id.layoutOrders)

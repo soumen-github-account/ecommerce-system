@@ -72,4 +72,7 @@ dependencies {
     implementation ("com.github.bumptech.glide:glide:4.16.0")
     implementation ("com.razorpay:checkout:1.6.40")
     implementation ("com.google.code.gson:gson:2.10.1")
+
+    // lottie
+    implementation("com.airbnb.android:lottie:6.6.0")
 }

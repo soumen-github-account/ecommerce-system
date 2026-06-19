@@ -38,13 +38,27 @@ class AddressFragment : Fragment() {
 
         loadUserAddresses()
 
+//        btnDeliverHere.setOnClickListener {
+//            val parentActivity = activity as? CheckoutActivity
+//            if (parentActivity?.selectedAddressForCheckout != null) {
+//                // Next step flow sequence mapping call
+//                parentActivity.loadFragment(OrderSummaryFragment())
+//            } else {
+//                Toast.makeText(requireContext(), "Please select an address!", Toast.LENGTH_SHORT).show()
+//            }
+//        }
         btnDeliverHere.setOnClickListener {
-            val parentActivity = activity as? CheckoutActivity
-            if (parentActivity?.selectedAddressForCheckout != null) {
-                // Next step flow sequence mapping call
+
+            val parentActivity = activity as? CheckoutActivity ?: return@setOnClickListener
+
+            if (parentActivity.selectedAddressForCheckout == null) {
+                Toast.makeText(requireContext(), "Please select address!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            parentActivity.createOrderAndContinue { orderId ->
+
                 parentActivity.loadFragment(OrderSummaryFragment())
-            } else {
-                Toast.makeText(requireContext(), "Please select an address!", Toast.LENGTH_SHORT).show()
             }
         }
         return view

@@ -154,4 +154,38 @@ class CheckoutActivity : AppCompatActivity() {
         }
         return super.onSupportNavigateUp()
     }
+    fun createOrderAndContinue(onDone: (String) -> Unit) {
+
+        val token = tokenManager.getToken() ?: return
+
+        lifecycleScope.launch {
+            try {
+
+                val response = RetrofitClient.userApi.createOrder(
+                    "Bearer $token",
+                    data.remote.request.CreateOrderRequest(
+                        items = checkoutCartItems,
+                        totalAmount = totalCartAmount
+                    )
+                )
+
+                if (response.isSuccessful && response.body() != null) {
+
+                    val orderId = response.body()!!.orderId
+
+                    this@CheckoutActivity.orderId = orderId
+
+                    Log.d("ORDER", "Created orderId = $orderId")
+
+                    onDone(orderId)
+
+                } else {
+                    Log.e("ORDER", response.errorBody()?.string() ?: "error")
+                }
+
+            } catch (e: Exception) {
+                Log.e("ORDER", e.message.toString())
+            }
+        }
+    }
 }
