@@ -138,23 +138,6 @@ export default function AddProduct() {
 
   const onSubmit = async (data) => {
   try {
-    console.log(
-  data.variants.map(v =>
-    v.images?.map(img => ({
-      hasFile: !!img.file
-    }))
-  )
-);
-
-console.log(
-  data.variants.map((v) => ({
-    images: v.images?.map((img) => ({
-      isFile: img.file instanceof File,
-      file: img.file,
-      url: img.url?.substring(0, 30),
-    })),
-  }))
-);
     const formData = new FormData();
 
     // variants se images remove karo
@@ -196,25 +179,13 @@ console.log(
       "variants",
       JSON.stringify(cleanVariants)
     );
-
-    // images separately upload karo
-    // data.variants.forEach((variant, vIndex) => {
-    //   variant.images?.forEach((imgObj) => {
-    //     if (imgObj.file) {
-    //       formData.append(
-    //         `variant_${vIndex}`,
-    //         imgObj.file
-    //       );
-    //     }
-    //   });
-    // });
     data.variants.forEach((variant, index) => {
-  variant.images?.forEach((img) => {
-    if (img.file instanceof File) {
-      formData.append(`variant_${index}`, img.file);
-    }
-  });
-});
+      variant.images?.forEach((img) => {
+        if (img.file instanceof File) {
+          formData.append(`variant_${index}`, img.file);
+        }
+      });
+    });
 
     console.log(
       "variants size:",

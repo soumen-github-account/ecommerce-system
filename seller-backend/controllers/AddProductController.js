@@ -5,6 +5,7 @@ import { Product } from "../models/ProductModel.js";
 import { ProductVariant } from "../models/ProductVariant.js";
 
 import { uploadImage } from "../utils/uploadToCloudinary.js";
+import { Seller } from "../models/SellerModel.js";
 
 export const addProduct = async (req, res) => {
 
@@ -194,4 +195,24 @@ export const addProduct = async (req, res) => {
 
     }
 
+};
+
+export const getAllSeller = async (req, res) => {
+  try {
+    const sellers = await Seller.find({})
+      .select("_id fullName store.storeName");
+
+    return res.status(200).json({
+      success: true,
+      sellers,
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };

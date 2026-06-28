@@ -6,7 +6,18 @@ const api = axios.create({
 });
 
 export const getSellers = async () => {
-  const { data } = await api.get("/sellers");
+  const { data } = await api.get("/api/seller/me");
 
-  return data.data;
+  return data.seller;
+};
+
+export const getAllSeller = async () => {
+  const { data } = await api.get("/api/product/get-all-seller");
+
+  return data.sellers;
+};
+
+export const logoutSeller = async () => {
+  const { data } = await api.post("/api/seller/logout");
+  return data;
 };

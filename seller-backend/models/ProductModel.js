@@ -38,11 +38,10 @@ const ProductSchema = new mongoose.Schema(
     tags: [String],
     warranty: String,
     returnPolicy: String,
-    // seller: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref:"Seller"
-    // },
-    seller: String,
+    seller: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref:"Seller"
+    },
     status:{
         type:String,
         enum:["draft","active","blocked"],

@@ -8,10 +8,10 @@ const SubCategorySchema = new mongoose.Schema(
       trim: true,
     },
 
-    image: {
-      type: String,
-      required: true,
-    },
+    // image: {
+    //   type: String,
+    //   required: true,
+    // },
 
     category: {
       type: mongoose.Schema.Types.ObjectId,

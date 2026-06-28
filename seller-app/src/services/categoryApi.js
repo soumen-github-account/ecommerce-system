@@ -22,3 +22,19 @@ export const getLevel2Categories = async (subCategoryId) => {
   );
   return data.data;
 };
+
+
+export const createCategory = (formData) => {
+  return api.post("/api/category/category", formData);
+};
+
+// export const createSubCategory = (formData) => {
+//   return api.post("/api/category/subcategory", formData);
+// };
+export const createSubCategory = (data) => {
+  return api.post("/api/category/subcategory", data);
+};
+
+export const createLevel2 = (formData) => {
+  return api.post("/api/category/subcategory-level2", formData);
+};

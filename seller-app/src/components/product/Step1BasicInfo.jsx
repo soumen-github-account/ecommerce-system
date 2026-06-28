@@ -121,24 +121,10 @@ export default function Step1BasicInfo({ next }) {
           <FormSelect
             name="seller"
             placeholder="Select Seller"
-            options={[
-              {
-                value: "seller_1",
-                label: "Tech World Pvt Ltd",
-              },
-              {
-                value: "seller_2",
-                label: "Mobile Hub",
-              },
-              {
-                value: "seller_3",
-                label: "Fashion Store",
-              },
-              {
-                value: "seller_4",
-                label: "Electronics Mart",
-              },
-            ]}
+            options={sellers.map((item) => ({
+              value: item._id,
+              label: item.store?.storeName || item.fullName,
+            }))}
           />
         </div>
         <div>
