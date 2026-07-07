@@ -1,9 +1,10 @@
 
-import { Wishlist } from "../models/WishlistModel.js";
-import { Cart } from "../models/CartModel.js";
 import { Address } from "../models/AddressModel.js";
 import { Order } from "../models/OrderModel.js";
 import { Product } from "../models/ProductModel.js";
+import { Cart } from "../models/CartModel.js";
+import { Wishlist } from "../models/WishlistModel.js"
+
 
 export const getUser = async(req, res) => {
     try {
@@ -87,42 +88,93 @@ export const createWishList = async (req, res) => {
     }
 };
 
+// export const getWishlistProduct = async (req, res) => {
+//     try {
+//         const userId = req.user.id;
+
+//         // FIXED: Pure nested components ko populate kiya taaki Android crash na ho
+//         const wishlist = await Wishlist.find({
+//             user: userId,
+//         }).populate({
+//             path: "product",
+//             populate: [
+//                 {
+//                     path: "category",
+//                     select: "name",
+//                 },
+//                 {
+//                     path: "subCategory",
+//                     select: "name",
+//                 },
+//                 {
+//                     path: "subCategoryLevel2", // 🔥 FIXED: Yeh missing tha! Iske bina crash ho jata
+//                     select: "name",
+//                 },
+//             ],
+//         });
+
+//         res.status(200).json({
+//             success: true,
+//             count: wishlist.length,
+//             wishlist,
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: error.message,
+//         });
+//     }
+// };
+
 export const getWishlistProduct = async (req, res) => {
-    try {
-        const userId = req.user.id;
+  try {
+    const userId = req.user.id;
 
-        // FIXED: Pure nested components ko populate kiya taaki Android crash na ho
-        const wishlist = await Wishlist.find({
-            user: userId,
-        }).populate({
-            path: "product",
-            populate: [
-                {
-                    path: "category",
-                    select: "name",
-                },
-                {
-                    path: "subCategory",
-                    select: "name",
-                },
-                {
-                    path: "subCategoryLevel2", // 🔥 FIXED: Yeh missing tha! Iske bina crash ho jata
-                    select: "name",
-                },
-            ],
-        });
+    const wishlist = await Wishlist.find({
+      user: userId,
+    }).populate({
+      path: "product", // ProductVariant
+      populate: [
+        {
+          path: "product", // Main Product
+          populate: [
+            {
+              path: "category",
+              select: "name",
+            },
+            {
+              path: "subCategory",
+              select: "name",
+            },
+            {
+              path: "subCategoryLevel2",
+              select: "name",
+            },
+            {
+              path: "brand",
+              select: "name logo",
+            },
+            {
+              path: "seller",
+              select: "storeName",
+            },
+          ],
+        },
+      ],
+    });
 
-        res.status(200).json({
-            success: true,
-            count: wishlist.length,
-            wishlist,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
-    }
+    res.status(200).json({
+      success: true,
+      count: wishlist.length,
+      wishlist,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 export const addToCart = async (req, res) => {
@@ -172,9 +224,29 @@ export const getCartItems = async (req, res) => {
     const userId = req.user.id;
 
     // 1. User ke saare cart items nikalna aur product data populate karna
+    // const cartItems = await Cart.find({
+    //   user: userId,
+    // }).populate({
+    //   path: "product",
+    //   populate: [
+    //     {
+    //       path: "category",
+    //       select: "name",
+    //     },
+    //     {
+    //       path: "subCategory",
+    //       select: "name",
+    //     },
+    //     {
+    //       path: "subCategoryLevel2", // FIXED: Jo pehle crash ho raha tha, ab fully populated hai
+    //       select: "name",
+    //     },
+    //   ],
+    // });
     const cartItems = await Cart.find({
       user: userId,
-    }).populate({
+    })
+    .populate({
       path: "product",
       populate: [
         {
@@ -186,15 +258,19 @@ export const getCartItems = async (req, res) => {
           select: "name",
         },
         {
-          path: "subCategoryLevel2", // FIXED: Jo pehle crash ho raha tha, ab fully populated hai
+          path: "subCategoryLevel2",
           select: "name",
         },
       ],
+    })
+    .populate({
+      path: "variant",
     });
 
     // 2. Subtotal Calculate karna (Sirf products ka total price)
     const subTotal = cartItems.reduce((sum, item) => {
-      const price = item.product?.price?.[0] || 0;
+      const price =
+          item.variant?.pricing?.sellingPrice || 0;
       return sum + price * item.quantity;
     }, 0);
 
@@ -209,13 +285,31 @@ export const getCartItems = async (req, res) => {
     const grandTotal = subTotal + shippingCharges;
 
     // 5. Clean & Structured Response bhejenge jo Android directly parse kar sake
+    cartItems.map(item => ({
+
+      _id: item._id,
+
+      quantity: item.quantity,
+
+      product: item.product,
+
+      variant: item.variant,
+
+      price: item.variant?.pricing?.sellingPrice,
+
+      mrp: item.variant?.pricing?.mrp,
+
+      image: item.variant?.images?.find(i => i.isPrimary)?.url
+          || item.variant?.images?.[0]?.url
+
+    }))
     res.json({
       success: true,
       count: cartItems.length,
       subTotal: subTotal,
       shippingCharges: shippingCharges,
       grandTotal: grandTotal,
-      cartItems: cartItems,
+      cartItems: formattedCart
     });
 
   } catch (error) {
@@ -591,32 +685,83 @@ export const checkout = async (req, res) => {
   }
 };
 
-export const getMyOrders = async (
-  req,
-  res
-) => {
+// export const getMyOrders = async (
+//   req,
+//   res
+// ) => {
+//   try {
+
+//     const orders =
+//       await Order.find({
+//         user: req.user.id
+//       })
+//       .populate("address")
+//       .populate("items.product");
+
+//     res.json({
+//       success: true,
+//       orders
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
+
+export const getMyOrders = async (req, res) => {
   try {
 
-    const orders =
-      await Order.find({
-        user: req.user.id
+    const orders = await Order.find({
+      user: req.user.id,
+    })
+      .populate({
+        path: "items.product",
+        select:
+          "title brand category subCategory subCategoryLevel2",
+        populate: [
+          {
+            path: "brand",
+            select: "name logo",
+          },
+          {
+            path: "category",
+            select: "name",
+          },
+          {
+            path: "subCategory",
+            select: "name",
+          },
+          {
+            path: "subCategoryLevel2",
+            select: "name",
+          },
+        ],
       })
-      .populate("address")
-      .populate("items.product");
+      .populate({
+        path: "items.variant",
+        select:
+          "variantName sku images attributes pricing inventory",
+      })
+      .sort({ createdAt: -1 });
 
-    res.json({
+    res.status(200).json({
       success: true,
-      orders
+      count: orders.length,
+      orders,
     });
 
   } catch (error) {
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
+
   }
 };
-
 
 export const getOrderById = async (req, res) => {
     const order = await Order.findById(req.params.id)

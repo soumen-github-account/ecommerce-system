@@ -1,27 +1,92 @@
-import { Product } from "../models/ProductModel.js"
 import { Category } from "../models/CategoryModel.js";
 import { SubCategory } from "../models/SubCategoryModel.js";
 import { SubCategory2 } from "../models/SubCategoryLevel2Model.js";
+import { ProductVariant } from "../models/ProductVariant.js";
+import { Product } from "../models/ProductModel.js";
 
-export const getAllProduct = async(req, res) => {
-    try {
-        const products = await Product.find({})
-            .populate("category")
-            .populate("subCategory")
-            .populate("subCategoryLevel2");
+// export const getAllProduct = async(req, res) => {
+//     try {
+//         const products = await Product.find({})
+//             .populate("category")
+//             .populate("subCategory")
+//             .populate("subCategoryLevel2");
 
-        res.json({
-            success: true,
-            products: products
-        })
+//         res.json({
+//             success: true,
+//             products: products
+//         })
         
-    } catch (error) {
-        res.json({
-            success: false,
-            message: error.message
-        })        
-    }
-}
+//     } catch (error) {
+//         res.json({
+//             success: false,
+//             message: error.message
+//         })        
+//     }
+// }
+
+export const getAllProduct = async (req, res) => {
+  try {
+    const products = await ProductVariant.find({
+      status: "active",
+    })
+      .populate({
+        path: "product",
+        match: {
+          isPublished: true,
+          status: "active",
+        },
+        select:
+          "title slug brand category subCategory subCategoryLevel2 highlights services",
+      })
+      .lean();
+
+    const result = products
+      .filter((item) => item.product)
+      .map((item) => ({
+        _id: item._id,
+
+        productId: item.product._id,
+
+        title: item.product.title,
+
+        slug: item.product.slug,
+
+        brand: item.product.brand,
+
+        category: item.product.category,
+
+        subCategory: item.product.subCategory,
+
+        subCategoryLevel2:
+          item.product.subCategoryLevel2,
+
+        variantName: item.variantName,
+
+        attributes: item.attributes,
+
+        image:
+          item.images.find((i) => i.isPrimary)?.url ||
+          item.images[0]?.url,
+
+        pricing: item.pricing,
+
+        stock: item.inventory.stock,
+
+        highlights: item.product.highlights,
+      }));
+
+    res.json({
+      success: true,
+      total: result.length,
+      products: result,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 export const getAllCategory = async (req, res) => {
     try {
@@ -102,7 +167,8 @@ export const getNestedSubCategories = async(req, res) => {
     }
 }
 
-// 🔥 NAYA CONTROLLER: Sirf Category Fragment ke liye jisme deep nesting hai
+//  NAYA CONTROLLER: Sirf Category Fragment ke liye jisme deep nesting hai
+
 export const getNestedCategories = async (req, res) => {
     try {
         // Isme hum subCategories ke andar jaakar subCategoryLevel2Ids ko bhi populate kar rahe hain
@@ -127,57 +193,387 @@ export const getNestedCategories = async (req, res) => {
     }
 };
 
+// export const getAllProductByCategory = async (req, res) => {
+//     try {
+//         const { categoryId } = req.params;
+
+//         const products = await Product.find({category: categoryId})
+//         .populate("category")
+//         .populate("subCategory")
+//         .populate("subCategoryLevel2");
+
+//         res.status(200).json({
+//             success: true,
+//             count: products.length,
+//             products,
+//         });
+
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: error.message,
+//         });
+//     }
+// };
+
 export const getAllProductByCategory = async (req, res) => {
-    try {
-        const { categoryId } = req.params;
+  try {
+    const { categoryId } = req.params;
 
-        const products = await Product.find({category: categoryId})
-        .populate("category")
-        .populate("subCategory")
-        .populate("subCategoryLevel2");
+    const variants = await ProductVariant.find({
+      status: "active",
+    })
+      .populate({
+        path: "product",
+        match: {
+          category: categoryId,
+          status: "active",
+          isPublished: true,
+        },
+        select:
+          "title slug brand category subCategory subCategoryLevel2 highlights",
+      })
+      .lean();
+    //   console.log(JSON.stringify(variants, null, 2));
 
-        res.status(200).json({
-            success: true,
-            count: products.length,
-            products,
-        });
+    const products = variants
+      .filter((item) => item.product) // category match hua wahi rahega
+      .map((item) => ({
+        _id: item._id,
+        productId: item.product._id,
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
-    }
+        title: item.product.title,
+        slug: item.product.slug,
+
+        brand: item.product.brand,
+
+        category: item.product.category,
+        subCategory: item.product.subCategory,
+        subCategoryLevel2: item.product.subCategoryLevel2,
+
+        variantName: item.variantName,
+        attributes: item.attributes,
+
+        image:
+          item.images.find((img) => img.isPrimary)?.url ||
+          item.images[0]?.url,
+
+        pricing: item.pricing,
+        inventory: item.inventory,
+      }));
+
+    //   console.log(products)
+
+    return res.status(200).json({
+      success: true,
+      total: products.length,
+      products,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
 };
+
+// export const getProductById = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+
+//         const product = await Product.findById(id)
+//         .populate("category")
+//         .populate("subCategory")
+//         .populate("subCategoryLevel2");
+
+//         if (!product) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Product not found"
+//             });
+//         }
+
+//         res.status(200).json({
+//             success: true,
+//             product
+//         });
+
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+
+// export const getProductById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     console.log(id)
+
+//     const variant = await ProductVariant.findById(id)
+//       .populate({
+//         path: "product",
+//         populate: [
+//           { path: "category" },
+//           { path: "subCategory" },
+//           { path: "subCategoryLevel2" },
+//         ],
+//       })
+//       .lean();
+//     //   console.log(variant)
+
+//     if (!variant || !variant.product) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Product not found",
+//       });
+//     }
+//     const allVariants = await ProductVariant.find({
+//       product: variant.product._id,
+//     })
+//       .select(
+//         "attributes images pricing.sellingPrice inventory.stock"
+//       )
+//       .lean();
+    
+//     const availableAttributes = {};
+
+//     allVariants.forEach((v) => {
+//       (v.attributes || []).forEach((attr) => {
+
+//         if (!availableAttributes[attr.name]) {
+//           availableAttributes[attr.name] = [];
+//         }
+
+//         const alreadyExists = availableAttributes[attr.name].find(
+//           (x) => x.value === attr.value
+//         );
+
+//         if (!alreadyExists) {
+//           availableAttributes[attr.name].push({
+//             variantId: v._id,
+//             value: attr.value,
+//             image: v.images?.[0]?.url || "",
+//             price: v.pricing?.sellingPrice || 0,
+//             stock: v.inventory?.stock || 0,
+//           });
+//         }
+
+//       });
+//     });
+
+//     const data = {
+//       _id: variant._id,
+//       productId: variant.product._id,
+
+//       title: variant.product.title,
+//       slug: variant.product.slug,
+//       description: variant.product.description,
+//       shortDescription: variant.product.shortDescription,
+
+//       brand: variant.product.brand,
+
+//       category: {
+//         _id: variant.product.category._id,
+//         name: variant.product.category.name,
+//         image: variant.product.category.image,
+//       },
+
+//       subCategory: {
+//         _id: variant.product.subCategory._id,
+//         name: variant.product.subCategory.name,
+//       },
+
+//       subCategoryLevel2: {
+//         _id: variant.product.subCategoryLevel2._id,
+//         name: variant.product.subCategoryLevel2.name,
+//         image: variant.product.subCategoryLevel2.image,
+//       },
+
+//       highlights: variant.product.highlights,
+
+//       variantName: variant.variantName,
+//       attributes: variant.attributes,
+//       specifications: variant.specifications,
+//       images: variant.images,
+//       variants: allVariants.map(v => ({
+//         variantId: v._id,
+//         attributes: v.attributes,
+//         price: v.pricing.sellingPrice,
+//         stock: v.inventory.stock,
+//         image: v.images?.[0]?.url
+//       })),
+//       pricing: variant.pricing,
+//       inventory: variant.inventory,
+//       shipping: variant.shipping,
+//     };
+
+//     console.log(data)
+
+//     return res.status(200).json({
+//       success: true,
+//       product: data,
+//     });
+
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 
 export const getProductById = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        const product = await Product.findById(id)
-        .populate("category")
-        .populate("subCategory")
-        .populate("subCategoryLevel2");
+    // Current selected variant
+    const variant = await ProductVariant.findById(id)
+      .populate({
+        path: "product",
+        populate: [
+          { path: "category" },
+          { path: "subCategory" },
+          { path: "subCategoryLevel2" },
+        ],
+      })
+      .lean();
 
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: "Product not found"
-            });
+    if (!variant || !variant.product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // Product ke saare variants
+    const allVariants = await ProductVariant.find({
+      product: variant.product._id,
+    })
+      .select(
+        "variantName attributes images pricing inventory"
+      )
+      .lean();
+
+    // =====================================================
+    // Build Available Attributes
+    // =====================================================
+
+    const availableAttributes = {};
+
+    allVariants.forEach((v) => {
+      (v.attributes || []).forEach((attr) => {
+
+        if (!availableAttributes[attr.name]) {
+          availableAttributes[attr.name] = [];
         }
 
-        res.status(200).json({
-            success: true,
-            product
-        });
+        const exists = availableAttributes[attr.name].some(
+          (x) => x.value === attr.value
+        );
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+        if (!exists) {
+          availableAttributes[attr.name].push({
+            variantId: v._id,
+            value: attr.value,
+            image: v.images?.[0]?.url || "",
+            price: v.pricing?.sellingPrice || 0,
+            stock: v.inventory?.stock || 0,
+          });
+        }
+      });
+    });
+
+    // =====================================================
+    // Build Variant List
+    // =====================================================
+
+    const variants = allVariants.map((v) => ({
+      variantId: v._id,
+      variantName: v.variantName,
+
+      attributes: v.attributes,
+
+      image: v.images?.[0]?.url || "",
+
+      price: {
+        mrp: v.pricing?.mrp || 0,
+        sellingPrice: v.pricing?.sellingPrice || 0,
+        discount: v.pricing?.discount || 0,
+      },
+
+      stock: v.inventory?.stock || 0,
+    }));
+
+    // =====================================================
+    // Final Response
+    // =====================================================
+
+    const data = {
+      _id: variant._id,
+      productId: variant.product._id,
+
+      title: variant.product.title,
+      slug: variant.product.slug,
+      description: variant.product.description,
+      shortDescription: variant.product.shortDescription,
+
+      brand: variant.product.brand,
+
+      category: {
+        _id: variant.product.category?._id,
+        name: variant.product.category?.name,
+        image: variant.product.category?.image,
+      },
+
+      subCategory: {
+        _id: variant.product.subCategory?._id,
+        name: variant.product.subCategory?.name,
+      },
+
+      subCategoryLevel2: {
+        _id: variant.product.subCategoryLevel2?._id,
+        name: variant.product.subCategoryLevel2?.name,
+        image: variant.product.subCategoryLevel2?.image,
+      },
+
+      highlights: variant.product.highlights || [],
+
+      specifications: variant.specifications || [],
+
+      images: variant.images || [],
+
+      pricing: variant.pricing,
+
+      inventory: variant.inventory,
+
+      shipping: variant.shipping,
+
+      // ⭐ Flipkart style attribute selector
+      availableAttributes,
+
+      // ⭐ All variants
+      variants,
+    };
+
+    console.log(JSON.stringify(data, null, 2));
+
+    return res.status(200).json({
+      success: true,
+      product: data,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
+
 
 export const searchProducts = async (req, res) => {
     try {
