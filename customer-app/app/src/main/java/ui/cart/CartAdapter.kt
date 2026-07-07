@@ -54,46 +54,37 @@ class CartAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        // ... inside onBindViewHolder
         if (holder is CartViewHolder) {
             val cartItem = cartList[position]
             val product = cartItem.product
 
-            if (product != null) {
-                holder.txtBrand.text = product.details.getOrNull(0) ?: "Brand"
-                holder.txtTitle.text = product.name ?: "N/A"
+            // 1. Data Mapping
+            holder.txtTitle.text = product?.title ?: "N/A"
+            holder.txtBrand.text = product?.brand ?: "CityBasket"
 
-                val singlePrice = product.price.getOrNull(0) ?: 0
-                holder.txtPrice.text = "₹${singlePrice * cartItem.quantity}"
-                holder.txtQuantity.text = "${cartItem.quantity}"
+            // 2. Direct Price from CartItemResponse
+            holder.txtPrice.text = "₹${cartItem.price * cartItem.quantity}"
+            holder.txtQuantity.text = "${cartItem.quantity}"
 
-                if (!cartItem.varient.isNullOrEmpty()) {
-                    holder.txtVariant?.text = "Size: ${cartItem.varient}"
-                    holder.txtVariant?.visibility = View.VISIBLE
-                } else {
-                    holder.txtVariant?.visibility = View.GONE
-                }
-
-                Glide.with(holder.itemView.context)
-                    .load(product.images.getOrNull(0))
-                    .placeholder(R.drawable.ic_fashion_tshirt)
-                    .into(holder.imgProduct)
-
-                // Delete click listener
-                holder.btnDelete.setOnClickListener {
-                    product.id?.let { productId -> onDeleteClick(productId) }
-                }
-
-                // FIXED: Plus Button Click Listener
-                holder.btnPlus.setOnClickListener {
-                    product.id?.let { productId -> onQuantityUpdateClick(productId, "increment") }
-                }
-
-                // FIXED: Minus Button Click Listener
-                holder.btnMinus.setOnClickListener {
-                    product.id?.let { productId -> onQuantityUpdateClick(productId, "decrement") }
-                }
+            // 3. Image loading (Using the clean field from response)
+            val finalImageUrl = when {
+                cartItem.image.isNullOrEmpty() -> ""
+                cartItem.image.startsWith("http") -> cartItem.image
+                else -> "http://10.0.2.2:5000/${cartItem.image.trimStart('/')}"
             }
-        } else if (holder is FooterViewHolder) {
+
+            Glide.with(holder.itemView.context)
+                .load(finalImageUrl)
+                .placeholder(R.drawable.ic_fashion_tshirt)
+                .into(holder.imgProduct)
+
+            // 4. Listeners
+            holder.btnDelete.setOnClickListener { onDeleteClick(cartItem._id) }
+            holder.btnPlus.setOnClickListener { onQuantityUpdateClick(cartItem._id, "increment") }
+            holder.btnMinus.setOnClickListener { onQuantityUpdateClick(cartItem._id, "decrement") }
+        }
+        else if (holder is FooterViewHolder) {
             holder.txtSubtotal.text = "₹$subTotal"
             holder.txtShipping.text = "₹$shippingCharges"
             holder.txtGrandTotal.text = "₹$grandTotal"

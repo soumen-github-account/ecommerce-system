@@ -1,4 +1,9 @@
 package data.model.product
 
-class ManufacturerItem {
-}
+data class ManufacturerItem(
+
+    val title: String,
+
+    val value: String
+
+) : AllDetailsItem()

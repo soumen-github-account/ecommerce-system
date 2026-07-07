@@ -19,34 +19,28 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <include
+                android:id="@+id/toolbarLayout"
+                layout="@layout/toolbar"
+                app:layout_constraintTop_toTopOf="parent" />
+
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="400dp"
-                android:background="#FFFFFF">
+                android:layout_height="450dp"
+                android:background="#FFFFFF"
+                android:layout_marginTop="5dp">
 
                 <androidx.viewpager2.widget.ViewPager2
                     android:id="@+id/viewPagerImages"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
 
-                <ImageButton
-                    android:id="@+id/btnBack"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="start|top"
-                    android:layout_margin="20dp"
-                    android:background="@drawable/bg_round_icon_button"
-                    android:elevation="2dp"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_back_24"
-                    app:tint="#212121" />
-
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="end|top"
+                    android:layout_gravity="end|bottom"
                     android:layout_margin="20dp"
-                    android:orientation="horizontal">
+                    android:orientation="vertical">
 
                     <ImageButton
                         android:id="@+id/btnWishlist"
@@ -62,7 +56,7 @@
                         android:id="@+id/btnShare"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginTop="10dp"
                         android:background="@drawable/bg_round_icon_button"
                         android:elevation="2dp"
                         android:padding="10dp"
@@ -71,13 +65,37 @@
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/layoutDots"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|center_horizontal"
-                    android:layout_marginBottom="16dp"
-                    android:elevation="4dp"
-                    android:orientation="horizontal" />
+                    android:id="@+id/indicatorLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_marginHorizontal="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:layout_gravity="bottom"
+                    android:orientation="horizontal"/>
+            </FrameLayout>
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp">
+
+                <!-- Grey Track -->
+                <View
+                    android:id="@+id/indicatorTrack"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_gravity="center"
+                    android:background="#E5E5E5"/>
+
+                <!-- Moving Thumb -->
+                <View
+                    android:id="@+id/indicatorThumb"
+                    android:layout_width="0dp"
+                    android:layout_height="3dp"
+                    android:layout_gravity="start|center"
+                    android:background="@drawable/indicator_active"/>
 
             </FrameLayout>
 
@@ -85,7 +103,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:paddingHorizontal="20dp"
+                >
 
                 <TextView
                     android:id="@+id/txtCategoryPath"
@@ -107,47 +126,50 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     tools:text="Minimalist Coffee Brewer Kit" />
-
-                <TextView
-                    android:id="@+id/txtBrand"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="#757575"
-                    android:textSize="14sp"
-                    android:textStyle="normal"
-                    tools:text="by UrbanKafe" />
-
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginLeft="10dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/txtBrand"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#757575"
+                        android:textSize="14sp"
+                        tools:text="by UrbanKafe" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="8dp"
+                        android:text="•"
+                        android:textColor="#9E9E9E" />
 
                     <TextView
                         android:id="@+id/txtRating"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_rating_pill"
-                        android:includeFontPadding="false"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="4dp"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:text="4.8 ★"
                         android:textColor="#FFFFFF"
                         android:textSize="12sp"
-                        android:textStyle="bold"
-                        tools:text="4.8 ★" />
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/txtReviews"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
+                        android:text="(128 Reviews)"
                         android:textColor="#9E9E9E"
-                        android:textSize="12sp"
-                        tools:text="(128 Reviews)" />
+                        android:textSize="12sp" />
                 </LinearLayout>
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -157,7 +179,7 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="5dp"
                     android:gravity="bottom"
                     android:orientation="horizontal">
 
@@ -206,11 +228,48 @@
                     android:textStyle="bold"
                     tools:text="In Stock" />
 
+                <!-- Variants Section (Dynamic) -->
+<!--                <TextView-->
+<!--                    style="@style/TextAppearance.MaterialComponents.Subtitle2"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="10dp"-->
+<!--                    android:text="Select Size"-->
+<!--                    android:textColor="#212121"-->
+<!--                    android:textStyle="bold" />-->
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:scrollbars="none">
+
+                    <!-- Yeh layout Kotlin se dynamically fill hoga -->
+                    <LinearLayout
+                        android:id="@+id/layoutAttributesParent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:id="@+id/colorContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                        <LinearLayout
+                            android:id="@+id/sizeContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+
                 <TextView
                     style="@style/TextAppearance.MaterialComponents.Subtitle2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="28dp"
+                    android:layout_marginTop="10dp"
                     android:text="Quantity"
                     android:textColor="#212121"
                     android:textStyle="bold" />
@@ -218,7 +277,7 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="5dp"
                     android:background="@drawable/bg_quantity_selector"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
@@ -253,168 +312,140 @@
                         app:tint="#424242" />
                 </LinearLayout>
 
-                <!-- Variants Section (Dynamic) -->
+                <!-- Delivery Details -->
+
                 <TextView
-                    style="@style/TextAppearance.MaterialComponents.Subtitle2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="28dp"
-                    android:text="Select Variant"
+                    android:text="Delivery details"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
                     android:textColor="#212121"
-                    android:textStyle="bold" />
+                    android:layout_marginBottom="12dp"
+                    android:layout_marginTop="15dp"/>
 
-                <HorizontalScrollView
+                <!-- Main Container -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:scrollbars="none">
+                    android:orientation="vertical"
+                    android:background="@drawable/rounded_bg_container"
+                    android:padding="4dp">
 
-                    <!-- Yeh layout Kotlin se dynamically fill hoga -->
+                    <!-- Address Row -->
                     <LinearLayout
-                        android:id="@+id/layoutVariantsContainer"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:paddingEnd="20dp" />
-                </HorizontalScrollView>
+                        android:padding="12dp"
+                        android:background="#EFF6FF"
+                        android:gravity="center_vertical">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_location" />
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:text="HOME Pita matar asirbad..." android:textColor="#212121" android:textStyle="bold" />
+                        <ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/arrow_right" />
+                    </LinearLayout>
 
-                <TextView
-                    style="@style/TextAppearance.MaterialComponents.Subtitle2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="28dp"
-                    android:text="Select Finish"
-                    android:textColor="#212121"
-                    android:textStyle="bold" />
+                    <!-- Express Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+                            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_van" />
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:orientation="horizontal">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="15dp" android:text="EXPRESS Delivery by Tomorrow" android:textStyle="bold" android:textColor="#212121" />
+                        </LinearLayout>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Order in 00h 42m 00s" android:textColor="#FF5722" />
+                    </LinearLayout>
 
-                    <FrameLayout
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:background="@drawable/bg_color_selected_ring"
-                        android:padding="3dp">
-                        <View android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/shape_color_black" />
-                    </FrameLayout>
+                    <!-- Seller Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+                            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_store" />
 
-                    <View android:layout_width="38dp" android:layout_height="38dp" android:layout_marginStart="16dp" android:layout_gravity="center_vertical" android:background="@drawable/shape_color_grey" />
-                    <View android:layout_width="38dp" android:layout_height="38dp" android:layout_marginStart="16dp" android:layout_gravity="center_vertical" android:background="@drawable/shape_color_cream" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="15dp" android:text="Fulfilled by NGIVR RETAILS" android:textColor="#212121" />
+                        </LinearLayout>
+
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4.7 ★ • 6 years with Flipkart" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="See other sellers" android:textColor="#2196F3" android:textStyle="bold" android:layout_marginTop="8dp" />
+                    </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout
+                <!-- Shop with Peace of Mind -->
+
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    android:orientation="horizontal"
-                    android:baselineAligned="false">
+                    android:layout_marginTop="20dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#E8E8E8"
+                    app:strokeWidth="1dp">
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        app:cardBackgroundColor="#FFFFFF"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#EEEEEE"
-                        app:strokeWidth="1dp">
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Shop with Peace of Mind"
+                            android:textStyle="bold"
+                            android:textSize="18sp"
+                            android:textColor="@color/white"
+                            android:padding="16dp"/>
 
                         <LinearLayout
+                            android:id="@+id/peaceContainer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:padding="16dp">
+                            android:orientation="vertical"/>
 
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_delivery_24"
-                                app:tint="#616161" />
+                    </LinearLayout>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="Delivery"
-                                android:textColor="#212121"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/txtDelivery"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="#757575"
-                                android:textSize="12sp"
-                                tools:text="Free by Tuesday" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        app:cardBackgroundColor="#FFFFFF"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#EEEEEE"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/ic_seller_24"
-                                app:tint="#616161" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="Seller"
-                                android:textColor="#212121"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/txtSeller"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="#757575"
-                                android:textSize="12sp"
-                                tools:text="UrbanKafe Pro" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
+                </com.google.android.material.card.MaterialCardView>
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginTop="32dp"
                     android:background="#EEEEEE" />
 
-                <TextView
-                    style="@style/TextAppearance.MaterialComponents.Subtitle1"
-                    android:layout_width="wrap_content"
+
+                <RelativeLayout
+                    android:id="@+id/highlightHeader"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="28dp"
-                    android:text="Product Highlights"
-                    android:textColor="#212121"
-                    android:textStyle="bold" />
+                    android:paddingVertical="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Product Highlights"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:textColor="#212121"/>
+
+                    <ImageView
+                        android:id="@+id/imgHighlightArrow"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:src="@drawable/ic_arrow_down"/>
+                </RelativeLayout>
 
                 <LinearLayout
                     android:id="@+id/layoutHighlights"
@@ -429,46 +460,72 @@
                     android:layout_marginTop="24dp"
                     android:background="#EEEEEE" />
 
-                <TextView
-                    style="@style/TextAppearance.MaterialComponents.Subtitle1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="28dp"
-                    android:text="Specifications"
-                    android:textColor="#212121"
-                    android:textStyle="bold" />
+                <!-- All Details -->
 
-                <LinearLayout
-                    android:id="@+id/layoutSpecifications"
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="24dp"
+                    android:background="#EEEEEE"/>
+
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="vertical" />
+                    android:layout_marginTop="24dp">
+
+                    <TextView
+                        android:id="@+id/txtAllDetails"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="All Details"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#212121"/>
+
+                    <ImageView
+                        android:id="@+id/imgAllDetailsArrow"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:src="@drawable/ic_arrow_down"/>
+
+                </RelativeLayout>
+
+                <com.google.android.material.tabs.TabLayout
+                    android:id="@+id/tabDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@android:color/white"
+
+                    app:tabIndicatorHeight="0dp"
+
+                    app:tabRippleColor="@android:color/transparent"
+
+                    app:tabMode="scrollable"
+
+                    app:tabSelectedTextColor="#FFFFFF"
+
+                    app:tabTextColor="#424242"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvAllDetails"
+
+                    android:layout_width="match_parent"
+
+                    android:layout_height="wrap_content"
+
+                    android:layout_marginTop="20dp"
+
+                    android:nestedScrollingEnabled="false"
+
+                    android:overScrollMode="never"/>
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginTop="24dp"
                     android:background="#EEEEEE" />
-
-                <TextView
-                    style="@style/TextAppearance.MaterialComponents.Subtitle1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    android:text="Description"
-                    android:textColor="#212121"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/txtDescription"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:lineSpacingExtra="5dp"
-                    android:textColor="#616161"
-                    android:textSize="15sp"
-                    tools:text="Experience the art of brewing with this premium minimalist coffee kit. Perfect for beginners and connoisseurs alike." />
 
                 <View
                     android:layout_width="match_parent"
@@ -513,6 +570,7 @@
                     android:paddingEnd="20dp" />
 
             </LinearLayout>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

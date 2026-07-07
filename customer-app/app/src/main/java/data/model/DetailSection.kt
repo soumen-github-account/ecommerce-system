@@ -1,4 +1,13 @@
 package data.model
 
-class DetailSection {
+enum class DetailSection {
+
+    FEATURES,
+
+    SPECIFICATIONS,
+
+    DESCRIPTION,
+
+    MANUFACTURER
+
 }

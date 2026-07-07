@@ -6,12 +6,12 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
     // http://192.168.1.7:8000/
-    private const val BASE_URL_LOCAL = "http://192.168.1.7:8000/"
-    private const val BASE_URL_LIVE = "https://system-customer-backend.onrender.com/"
+//    private const val BASE_URL_LOCAL = "http://192.168.1.7:8000/"
+//    private const val BASE_URL_LIVE = "https://system-customer-backend.onrender.com/"
 
     // Yahan switch karo
     private const val IS_LOCAL = true
-    private val BASE_URL = "http://192.168.1.7:8000/"
+    private val BASE_URL = "http://192.168.1.5:8000/"
     private val retrofit by lazy {
 
         Retrofit.Builder()

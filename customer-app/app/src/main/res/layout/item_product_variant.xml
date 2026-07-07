@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- Ye background drawable se control hoga (selected vs unselected) -->
+    <TextView
+        android:id="@+id/tvVariantValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:background="@drawable/bg_variant_selector"
+        android:text="M"
+        android:textColor="#212121"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:minWidth="60dp" />
+
+</FrameLayout>

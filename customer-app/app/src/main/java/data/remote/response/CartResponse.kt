@@ -15,8 +15,10 @@ data class CartResponse (
 
 data class CartItemResponse(
     val _id: String,
-    val user: String,
-    val product: Product?,
     val quantity: Int,
-    val varient: String?
+    val product: Product?,     // Jo humne pehle define kiya tha
+    val variant: Any?,         // Ya specific variant data class
+    val price: Int,            // Controller se aa raha hai
+    val mrp: Int,              // Controller se aa raha hai
+    val image: String?         // Controller se aa raha hai
 )

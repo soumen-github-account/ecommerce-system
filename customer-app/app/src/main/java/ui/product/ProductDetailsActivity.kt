@@ -1,58 +1,74 @@
 package com.ecommerce.citybasket.ui.product
 
 import android.graphics.Color
-import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.ecommerce.citybasket.R
 import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.launch
-import data.model.product.Product
+import com.google.android.material.tabs.TabLayout
+import data.model.DetailItem
+import data.model.DetailSection
+import data.model.product.*
 import data.remote.api.RetrofitClient
 import data.remote.request.CartRequest
+import kotlinx.coroutines.launch
+import ui.product.DetailAdapter
+import ui.product.DetailsCache
 import ui.product.ImageSliderAdapter
+import ui.product.ProductDetailsMapper
+import ui.product.adapter.AllDetailsAdapter
 import utils.TokenManager
 
 class ProductDetailsActivity : AppCompatActivity() {
 
+    // View declarations
     private lateinit var viewPagerImages: ViewPager2
-
-    private lateinit var txtCategoryPath: TextView
-    private lateinit var txtBrand: TextView
     private lateinit var txtTitle: TextView
-    private lateinit var txtRating: TextView
+    private lateinit var txtBrand: TextView
     private lateinit var txtPrice: TextView
     private lateinit var txtOldPrice: TextView
     private lateinit var txtDiscount: TextView
     private lateinit var txtStock: TextView
-    private lateinit var txtDescription: TextView
-    private lateinit var txtSeller: TextView
-    private lateinit var layoutVariantsContainer: LinearLayout
-
-    // Variables for logic
-    private var selectedSize: String? = null
-    private var productId: String? = null // FIXED: Isko global banaya taaki har jagah use ho sake
-
-    private lateinit var btnAddToCart: MaterialButton
-    private lateinit var btnBuyNow: MaterialButton
-
-    private lateinit var btnWishlist: ImageButton
-    private lateinit var btnShare: ImageButton
-
     private lateinit var layoutHighlights: LinearLayout
-    private lateinit var layoutSpecifications: LinearLayout
-    private lateinit var btnMinus: ImageButton
-    private lateinit var btnPlus: ImageButton
-    private lateinit var txtQuantity: TextView
+    private lateinit var colorContainer: LinearLayout
+    private lateinit var sizeContainer: LinearLayout
+
+    private lateinit var tabDetails: TabLayout
+
+    private lateinit var product: ProductDetails
+    private var selectedVariant: ProductVariant? = null
+    private var selectedSize: String? = null
+    private var productId: String? = null
+    private lateinit var tokenManager: TokenManager
+    private lateinit var rvAllDetails: RecyclerView
+
+    private lateinit var allDetailsAdapter: AllDetailsAdapter
+    private lateinit var detailsCache: DetailsCache
 
     private var currentQuantity = 1
+    private lateinit var txtQuantity: TextView
+    private lateinit var btnPlus: ImageButton
+    private lateinit var btnMinus: ImageButton
     private var baseProductPrice = 0
     private var baseOriginalPrice = 0
-    private lateinit var tokenManager: TokenManager
+
+    private lateinit var peaceContainer: LinearLayout
+
+    private lateinit var imgHighlightArrow: ImageView
+    private lateinit var highlightHeader: RelativeLayout
+
+    private var isHighlightExpanded = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,69 +76,41 @@ class ProductDetailsActivity : AppCompatActivity() {
         tokenManager = TokenManager(this)
 
         initViews()
+        // setupTabs()
+        setupRecycler()
 
-        // FIXED: Global variable mein intent data store kiya
         productId = intent.getStringExtra("PRODUCT_ID")
-
-        if (productId.isNullOrEmpty()) {
-            Toast.makeText(this, "Product ID not found", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-
-        loadProduct(productId!!)
-
-        setClickListeners()
+        if (!productId.isNullOrEmpty()) loadProduct(productId!!)
     }
 
     private fun initViews() {
         viewPagerImages = findViewById(R.id.viewPagerImages)
-
-        txtCategoryPath = findViewById(R.id.txtCategoryPath)
-        txtBrand = findViewById(R.id.txtBrand)
         txtTitle = findViewById(R.id.txtTitle)
-        txtRating = findViewById(R.id.txtRating)
+        txtBrand = findViewById(R.id.txtBrand)
         txtPrice = findViewById(R.id.txtPrice)
         txtOldPrice = findViewById(R.id.txtOldPrice)
         txtDiscount = findViewById(R.id.txtDiscount)
         txtStock = findViewById(R.id.txtStock)
-        txtDescription = findViewById(R.id.txtDescription)
-        txtSeller = findViewById(R.id.txtSeller)
-
-        btnAddToCart = findViewById(R.id.btnAddToCart)
-        btnBuyNow = findViewById(R.id.btnBuyNow)
-
-        btnWishlist = findViewById(R.id.btnWishlist)
-        btnShare = findViewById(R.id.btnShare)
-
         layoutHighlights = findViewById(R.id.layoutHighlights)
-        layoutSpecifications = findViewById(R.id.layoutSpecifications)
-        layoutVariantsContainer = findViewById(R.id.layoutVariantsContainer)
-
-        btnMinus = findViewById(R.id.btnMinus)
-        btnPlus = findViewById(R.id.btnPlus)
         txtQuantity = findViewById(R.id.txtQuantity)
-    }
+        btnPlus = findViewById(R.id.btnPlus)
+        btnMinus = findViewById(R.id.btnMinus)
 
-    private fun setClickListeners() {
-        btnWishlist.setOnClickListener {
-            Toast.makeText(this, "Added to wishlist", Toast.LENGTH_SHORT).show()
-        }
+        // Ensure XML mein ye IDs maujood hain
+        colorContainer = findViewById(R.id.colorContainer)
+        sizeContainer = findViewById(R.id.sizeContainer)
+        peaceContainer = findViewById(R.id.peaceContainer)
 
-        btnShare.setOnClickListener {
-            Toast.makeText(this, "Share product", Toast.LENGTH_SHORT).show()
-        }
-
-        btnBuyNow.setOnClickListener {
-            Toast.makeText(this, "Buy now clicked", Toast.LENGTH_SHORT).show()
-        }
+        highlightHeader = findViewById(R.id.highlightHeader)
+        imgHighlightArrow = findViewById(R.id.imgHighlightArrow)
+        tabDetails = findViewById(R.id.tabDetails)
 
         btnPlus.setOnClickListener {
-            if (currentQuantity < 10) {
-                currentQuantity++
-                updatePriceAndQuantityUI()
-            } else {
-                Toast.makeText(this, "Maximum quantity reached", Toast.LENGTH_SHORT).show()
+            selectedVariant?.let {
+                if (currentQuantity < it.stock) {
+                    currentQuantity++
+                    updatePriceAndQuantityUI()
+                }
             }
         }
 
@@ -133,254 +121,425 @@ class ProductDetailsActivity : AppCompatActivity() {
             }
         }
 
-        // FIXED: Dono AddToCart click listeners ko ek sath merge kar diya hai
-        btnAddToCart.setOnClickListener {
-            val pId = productId
+        highlightHeader.setOnClickListener {
 
-            // 1. SharedPreferences se token nikala
-            val savedToken = tokenManager.getToken()
+            if (isHighlightExpanded) {
 
-            // 2. Check kiya ki user logged in hai ya nahi
-            if (savedToken.isNullOrEmpty()) {
-                Toast.makeText(this, "Please login first!", Toast.LENGTH_SHORT).show()
-                // Aap chahein to yahan se LoginActivity par redirect kar sakte hain
-                return@setOnClickListener
-            }
+                layoutHighlights.visibility = View.GONE
 
-            if (layoutVariantsContainer.childCount > 0 && selectedSize == null) {
-                Toast.makeText(this, "Please select a size/variant first!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+                imgHighlightArrow.animate()
+                    .rotation(180f)
+                    .setDuration(250)
+                    .start()
 
-            if (!pId.isNullOrEmpty()) {
-                lifecycleScope.launch {
-                    try {
-                        val cartRequest = CartRequest(
-                            productId = pId,
-                            quantity = currentQuantity,
-                            varient = selectedSize ?: ""
-                        )
-
-                        // 3. Backend format ke mutabik "Bearer <token>" banaya
-                        val authHeader = "Bearer $savedToken"
-
-                        // 4. API Call mein header aur request body dono pass kar diye
-                        val response = RetrofitClient.userApi.addToCart(authHeader, cartRequest)
-
-                        if (response.success) {
-                            Toast.makeText(this@ProductDetailsActivity, response.message ?: "Added to cart!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this@ProductDetailsActivity, response.message, Toast.LENGTH_SHORT).show()
-                        }
-
-                    } catch (e: Exception) {
-                        Toast.makeText(this@ProductDetailsActivity, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
             } else {
-                Toast.makeText(this, "Invalid Product", Toast.LENGTH_SHORT).show()
+
+                layoutHighlights.visibility = View.VISIBLE
+
+                imgHighlightArrow.animate()
+                    .rotation(0f)
+                    .setDuration(250)
+                    .start()
             }
+
+            isHighlightExpanded = !isHighlightExpanded
         }
+
+        rvAllDetails = findViewById(R.id.rvAllDetails)
     }
 
-    private fun loadProduct(productId: String) {
+    private fun showSection(
+        section: DetailSection
+    ) {
+
+        val data = when(section){
+
+            DetailSection.FEATURES ->
+
+                detailsCache.features
+
+            DetailSection.SPECIFICATIONS ->
+
+                detailsCache.specifications
+
+            DetailSection.DESCRIPTION ->
+
+                detailsCache.description
+
+            DetailSection.MANUFACTURER ->
+
+                detailsCache.manufacturer
+
+        }
+
+        allDetailsAdapter.submitList(data)
+
+    }
+
+    private fun setupRecycler() {
+
+        allDetailsAdapter = AllDetailsAdapter()
+
+        rvAllDetails.layoutManager = LinearLayoutManager(this)
+
+        rvAllDetails.adapter = allDetailsAdapter
+
+    }
+
+    private fun loadProduct(id: String) {
         lifecycleScope.launch {
             try {
-                val response = RetrofitClient.productApi.getProductById(productId)
-
+                val response = RetrofitClient.productApi.getProductById(id)
                 if (response.success) {
-                    setProductData(response.product)
-                } else {
-                    Toast.makeText(this@ProductDetailsActivity, "Product not found", Toast.LENGTH_SHORT).show()
-                    finish()
+                    product = response.product
+                    selectedVariant = product.variants.firstOrNull()
+                    setProductData()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@ProductDetailsActivity, e.message ?: "Error", Toast.LENGTH_SHORT).show()
+                Log.e("ERROR", e.message.toString())
             }
         }
     }
 
-    private fun setProductData(product: Product) {
-        // 🔥 FIXED: category, subCategory, aur level2 ke objects ka sahi naam use kiya
-        txtCategoryPath.text = listOfNotNull(
-            product.categoryObj?.name,
-            product.subCategoryObj?.name,
-            product.subCategoryLevel2Obj?.name
-        ).joinToString(" > ")
+    private fun setProductData() {
+        txtTitle.text = product.title
+        txtBrand.text = product.brand
 
-        txtBrand.text = "by ${product.details.getOrNull(0) ?: "Brand"}"
-        txtTitle.text = product.name ?: "N/A"
-        txtRating.text = "4.8 ★"
+        setupAttributes()
+        setupPeaceOfMind()
+        setupHighlights()
+        detailsCache = DetailsCache(
 
-        val finalPrice = product.price.getOrNull(0) ?: 0
-        val originalPrice = finalPrice + ((finalPrice * product.discount) / 100)
+            features =
+                ProductDetailsMapper.getFeatures(product),
 
-        baseProductPrice = finalPrice
-        baseOriginalPrice = originalPrice
+            specifications =
+                ProductDetailsMapper.getSpecifications(product),
+
+            description =
+                ProductDetailsMapper.getDescription(product),
+
+            manufacturer =
+                ProductDetailsMapper.getManufacturer(product)
+
+        )
+
+        setupTabs()
+
+
+        showSection(
+            DetailSection.FEATURES
+        )
+        updateUI(selectedVariant!!)
+    }
+
+
+    private fun setupPeaceOfMind() {
+
+        peaceContainer.removeAllViews()
+
+        addPeaceItem(
+            R.drawable.ic_warranty,
+            "1 Year Limited Warranty"
+        )
+
+        addPeaceItem(
+            R.drawable.ic_support,
+            "7 Days Brand Support"
+        )
+
+        addPeaceItem(
+            R.drawable.ic_secure_payment,
+            "Secure Payment"
+        )
+
+        addPeaceItem(
+            R.drawable.ic_verified,
+            "100% Genuine Product"
+        )
+    }
+
+    private fun addPeaceItem(icon: Int, title: String) {
+
+        val view = layoutInflater.inflate(
+            R.layout.item_peace,
+            peaceContainer,
+            false
+        )
+
+        view.findViewById<ImageView>(R.id.icon).setImageResource(icon)
+
+        view.findViewById<TextView>(R.id.title).text = title
+
+        peaceContainer.addView(view)
+    }
+
+    private fun setupAttributes() {
+
+        colorContainer.removeAllViews()
+        colorContainer.addView(createTitleView("Select Color"))
+
+        val colorLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        val colors = product.availableAttributes["Color"] ?: emptyList()
+
+        val views = mutableListOf<View>()
+
+        colors.forEach { color ->
+
+            val view = layoutInflater.inflate(
+                R.layout.item_color,
+                colorLayout,
+                false
+            )
+
+            val img = view.findViewById<ImageView>(R.id.imgColor)
+            val txt = view.findViewById<TextView>(R.id.txtColor)
+
+            txt.text = color.value
+            txt.setTextColor(Color.BLACK)
+
+            Glide.with(this)
+                .load(color.image)
+                .transform(CenterCrop(), RoundedCorners(20))
+                .into(img)
+
+            views.add(view)
+
+            view.setOnClickListener {
+
+                views.forEach {
+                    it.setBackgroundResource(android.R.color.transparent)
+                }
+
+                view.setBackgroundResource(R.drawable.selected_color_border)
+
+                selectedVariant = product.variants.firstOrNull {
+                    it.variantId == color.variantId
+                }
+
+                updateUI(selectedVariant!!)
+                drawSizeButtons()
+            }
+
+            colorLayout.addView(view)
+        }
+
+        colorContainer.addView(colorLayout)
+
+        if (views.isNotEmpty()) {
+            views[0].performClick()
+        }
+    }
+
+    private fun drawSizeButtons() {
+        sizeContainer.removeAllViews()
+        sizeContainer.addView(createTitleView("Select Size"))
+
+        val sizeLayout = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val sizes = selectedVariant?.attributes?.find { it.name.equals("Size", true) }?.value?.split(",") ?: emptyList()
+        val buttons = mutableListOf<MaterialButton>()
+
+        sizes.forEach { size ->
+            val btn = createStyledButton(size.trim())
+            btn.setOnClickListener {
+                selectedSize = size.trim()
+                buttons.forEach { b -> styleButton(b, b == btn) }
+            }
+            buttons.add(btn)
+            sizeLayout.addView(btn)
+        }
+        sizeContainer.addView(sizeLayout)
+        if (buttons.isNotEmpty()) buttons[0].performClick()
+    }
+
+    private fun updateUI(variant: ProductVariant) {
+
+        baseProductPrice = variant.price.sellingPrice.toInt()
+        baseOriginalPrice = variant.price.mrp.toInt()
+
+        txtPrice.text = "₹$baseProductPrice"
+        txtOldPrice.text = "₹$baseOriginalPrice"
+        txtDiscount.text = "${variant.price.discount.toInt()}% OFF"
+
+        txtStock.text =
+            if (variant.stock > 0) "In Stock"
+            else "Out of Stock"
+
         currentQuantity = 1
-
-        // FIXED: Yahan se price automatic handle ho jayega dono text views par
         updatePriceAndQuantityUI()
 
-        txtDiscount.text = "${product.discount}% OFF"
-        txtStock.text = "Only ${product.stock} left in stock"
-        txtDescription.text = product.description ?: "No description available"
-        txtSeller.text = "Sold By CityBasket Pro"
-
-        txtOldPrice.paintFlags = txtOldPrice.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-
-        loadHighlights(product)
-        loadSpecifications(product)
-        setupImageSlider(product.images)
-        setupDynamicVariants(product.type)
+        viewPagerImages.adapter =
+            ImageSliderAdapter(product.images.map { it.url })
     }
 
-    private fun loadHighlights(product: Product) {
-        layoutHighlights.removeAllViews()
-
-        if (product.details.isEmpty() || product.detailsType.isEmpty()) {
-            val tv = TextView(this)
-            tv.text = "No highlights available"
-            tv.setTextColor(Color.parseColor("#424242"))
-            layoutHighlights.addView(tv)
-            return
-        }
-
-        val count = minOf(product.details.size, product.detailsType.size)
-
-        for (i in 0 until count) {
-            val tv = TextView(this)
-            tv.text = "•  ${product.detailsType[i]}: ${product.details[i]}"
-            tv.textSize = 14f
-            tv.setTextColor(Color.parseColor("#424242"))
-            tv.setPadding(0, 10, 0, 10)
-            layoutHighlights.addView(tv)
+    private fun createStyledButton(text: String): MaterialButton {
+        return MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            this.text = text
+            isAllCaps = false
+            cornerRadius = 16
+            strokeWidth = 2
+            setPadding(40, 0, 40, 0)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, 120).apply { marginEnd = 20 }
         }
     }
 
-    private fun loadSpecifications(product: Product) {
-        layoutSpecifications.removeAllViews()
-
-        // 🔥 FIXED: Yahan bhi category, subCategory aur level2 ke aage 'Obj' jodh diya hai
-        addSpec("Category", product.categoryObj?.name ?: "N/A")
-        addSpec("Sub Category", product.subCategoryObj?.name ?: "N/A")
-        addSpec("Product Type", product.subCategoryLevel2Obj?.name ?: "N/A")
-        addSpec("Unit", product.unit ?: "N/A")
-        addSpec("Stock", product.stock.toString())
-
-        // Type call check logic fallback configuration
-        addSpec("Sizes", product.type?.joinToString(", ") ?: "N/A")
+    private fun styleButton(btn: MaterialButton, isSelected: Boolean) {
+        btn.setBackgroundColor(if (isSelected) Color.parseColor("#212121") else Color.WHITE)
+        btn.setTextColor(if (isSelected) Color.WHITE else Color.parseColor("#212121"))
+        btn.strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#212121"))
     }
 
-    private fun addSpec(title: String, value: String) {
-        val rowLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            setPadding(0, 12, 0, 12)
-        }
-
-        val tvTitle = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            text = title
-            textSize = 14f
-            setTextColor(Color.parseColor("#757575"))
-        }
-
-        val tvValue = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f)
-            text = value
-            textSize = 14f
-            setTextColor(Color.parseColor("#212121"))
+    private fun createTitleView(text: String): TextView {
+        return TextView(this).apply {
+            this.text = text
             setTypeface(null, Typeface.BOLD)
-        }
-
-        rowLayout.addView(tvTitle)
-        rowLayout.addView(tvValue)
-        layoutSpecifications.addView(rowLayout)
-    }
-
-    private fun setupImageSlider(images: List<String>?) {
-        val imageList = images?.filterNotNull() ?: emptyList()
-        if (imageList.isEmpty()) return
-
-        val adapter = ImageSliderAdapter(imageList)
-        viewPagerImages.adapter = adapter
-    }
-
-    private fun setupDynamicVariants(sizes: List<String>?) {
-        layoutVariantsContainer.removeAllViews()
-        selectedSize = null
-
-        val sizeList = sizes?.filterNotNull() ?: emptyList()
-
-        if (sizeList.isEmpty()) {
-            return
-        }
-
-        val buttonList = mutableListOf<com.google.android.material.button.MaterialButton>()
-
-        for (size in sizeList) {
-            val btn = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonStyle).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    (52 * resources.displayMetrics.density).toInt()
-                ).apply {
-                    marginEnd = (12 * resources.displayMetrics.density).toInt()
-                }
-
-                text = size
-                textSize = 14f
-                isAllCaps = false
-                includeFontPadding = false
-                minWidth = (56 * resources.displayMetrics.density).toInt()
-                cornerRadius = (16 * resources.displayMetrics.density).toInt()
-                insetTop = 0
-                insetBottom = 0
-
-                setBackgroundColor(Color.parseColor("#FFFFFF"))
-                setTextColor(Color.parseColor("#212121"))
-
-                strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#E0E0E0"))
-                strokeWidth = (1 * resources.displayMetrics.density).toInt()
-            }
-
-            btn.setOnClickListener {
-                selectedSize = size
-
-                for (b in buttonList) {
-                    if (b == btn) {
-                        b.setBackgroundColor(Color.parseColor("#212121"))
-                        b.setTextColor(Color.parseColor("#FFFFFF"))
-                        b.strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#212121"))
-                    } else {
-                        b.setBackgroundColor(Color.parseColor("#FFFFFF"))
-                        b.setTextColor(Color.parseColor("#212121"))
-                        b.strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#E0E0E0"))
-                    }
-                }
-                Toast.makeText(this@ProductDetailsActivity, "Selected Size: $size", Toast.LENGTH_SHORT).show()
-            }
-
-            buttonList.add(btn)
-            layoutVariantsContainer.addView(btn)
-        }
-
-        if (buttonList.isNotEmpty()) {
-            buttonList[0].performClick()
+            setTextColor(Color.BLACK)
+            setPadding(0, 30, 0, 16)
         }
     }
 
     private fun updatePriceAndQuantityUI() {
+
         txtQuantity.text = currentQuantity.toString()
 
-        val totalFinalPrice = baseProductPrice * currentQuantity
-        val totalOriginalPrice = baseOriginalPrice * currentQuantity
+        val finalPrice = baseProductPrice * currentQuantity
+        val oldPrice = baseOriginalPrice * currentQuantity
 
-        txtPrice.text = "₹$totalFinalPrice"
-        txtOldPrice.text = "₹$totalOriginalPrice"
+        txtPrice.text = "₹$finalPrice"
+        txtOldPrice.text = "₹$oldPrice"
+    }
+
+    private fun setupHighlights() {
+
+        layoutHighlights.removeAllViews()
+
+        product.highlights.forEach { highlight ->
+
+            val view = layoutInflater.inflate(
+                R.layout.item_highlight,
+                layoutHighlights,
+                false
+            )
+
+            val txt = view.findViewById<TextView>(R.id.txtHighlight)
+            val img = view.findViewById<ImageView>(R.id.imgIcon)
+
+            txt.text = highlight
+
+            img.setImageResource(getHighlightIcon(highlight))
+
+            layoutHighlights.addView(view)
+        }
+    }
+
+    private fun getHighlightIcon(text: String): Int {
+
+        return when {
+
+            text.contains("Fabric", true) ->
+                R.drawable.ic_highlight
+
+            text.contains("Sleeve", true) ->
+                R.drawable.ic_highlight
+
+            text.contains("Neck", true) ->
+                R.drawable.ic_highlight
+
+            text.contains("Pattern", true) ->
+                R.drawable.ic_highlight
+
+            text.contains("Camera", true) ->
+                R.drawable.ic_highlight
+
+            text.contains("Battery", true) ->
+                R.drawable.ic_highlight
+
+            text.contains("Display", true) ->
+                R.drawable.ic_highlight
+
+            text.contains("Storage", true) ->
+                R.drawable.ic_highlight
+
+            else ->
+                R.drawable.ic_highlight
+        }
+    }
+
+    private fun setupTabs() {
+
+        val tabs = listOf(
+            "Features",
+            "Specifications",
+            "Description",
+            "Manufacturer"
+        )
+
+        tabs.forEach { title ->
+            tabDetails.addTab(
+                tabDetails.newTab().setCustomView(createTab(title))
+            )
+        }
+
+        updateTabSelection(0)
+
+        tabDetails.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+
+            override fun onTabSelected(tab: TabLayout.Tab) {
+
+                updateTabSelection(tab.position)
+
+                when(tab.position){
+
+                    0 -> showSection(DetailSection.FEATURES)
+
+                    1 -> showSection(DetailSection.SPECIFICATIONS)
+
+                    2 -> showSection(DetailSection.DESCRIPTION)
+
+                    3 -> showSection(DetailSection.MANUFACTURER)
+
+                }
+
+            }
+
+
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+    }
+
+    private fun createTab(title: String): View {
+
+        val view = layoutInflater.inflate(
+            R.layout.item_detail_tab,
+            null
+        )
+
+        view.findViewById<TextView>(R.id.txtTab).text = title
+
+        return view
+    }
+
+    private fun updateTabSelection(selected: Int) {
+
+        for (i in 0 until tabDetails.tabCount) {
+
+            val tab = tabDetails.getTabAt(i)
+
+            val txt = tab?.customView?.findViewById<TextView>(R.id.txtTab)
+
+            if (i == selected) {
+                txt?.setBackgroundResource(R.drawable.bg_tab_selected)
+                txt?.setTextColor(Color.WHITE)
+            } else {
+                txt?.setBackgroundResource(R.drawable.bg_tab_unselected)
+                txt?.setTextColor(Color.parseColor("#424242"))
+            }
+        }
     }
 
 }

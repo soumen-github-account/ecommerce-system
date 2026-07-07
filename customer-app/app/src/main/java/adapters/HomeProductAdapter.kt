@@ -35,52 +35,114 @@ class HomeProductAdapter(
         return ProductViewHolder(view)
     }
 
+//    override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
+//        val product = productList[position]
+//
+//        // 1. TITLE
+//        holder.txtTitle.text = product.name ?: "Product Name"
+//
+//        // 2. BRAND (Safe extraction check)
+//        // Agar details array null/empty hai toh safe "CityBasket" standard string fallback diya
+//        holder.txtBrand.text = try {
+//            product.details?.getOrNull(0) ?: "Brand"
+//        } catch (e: Exception) {
+//            "Brand"
+//        }
+//
+//        // 3. RATING
+//        holder.txtRating.text = "4.5"
+//
+//        // 4. PRICE PARSING (Most Critical Crash point)
+//        // Agar price list array format me nahi aa rahi direct string/int hai, toh crash se bachayega
+//        val finalPrice = try {
+//            product.price?.getOrNull(0) ?: 0
+//        } catch (e: Exception) {
+//            0
+//        }
+//        holder.txtPrice.text = "₹$finalPrice"
+//
+//        // 5. ORIGINAL PRICE & DISCOUNT
+//        val discountPercent = product.discount ?: 0
+//        val originalPrice = finalPrice + ((finalPrice * discountPercent) / 100)
+//        holder.txtOriginalPrice.text = "₹$originalPrice"
+//        holder.txtOriginalPrice.paintFlags = holder.txtOriginalPrice.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+//
+//        holder.txtDiscount.text = "$discountPercent% OFF"
+//
+//        // 6. IMAGE PARSING WITH ABSOLUTE IP ADDRESS CHECK
+//        // Agar database me product image online link nahi hai toh URL format absolute banao
+//        val rawImage = try {
+//            product.images?.getOrNull(0)
+//        } catch (e: Exception) {
+//            null
+//        }
+//
+//        val finalImageUrl = when {
+//            rawImage.isNullOrEmpty() -> ""
+//            rawImage.startsWith("http") -> rawImage
+//            else -> "http://10.0.2.2:5000/${rawImage.trimStart('/')}" // ⚠️ Apna node server port match kar lena
+//        }
+//
+//        Glide.with(holder.itemView.context)
+//            .load(finalImageUrl)
+//            .placeholder(R.drawable.ic_fashion_tshirt)
+//            .error(R.drawable.ic_fashion_tshirt)
+//            .into(holder.imgProduct)
+//
+//        // 7. WISHLIST CONTROL
+//        if (product.isWishlisted) {
+//            holder.imgWishlist.setImageResource(R.drawable.heart)
+//        } else {
+//            holder.imgWishlist.setImageResource(R.drawable.ic_heart)
+//        }
+//
+//        holder.imgWishlist.setOnClickListener {
+//            product.id?.let { productId ->
+//                product.isWishlisted = !product.isWishlisted
+//                notifyItemChanged(position)
+//                onWishlistClick(productId)
+//            }
+//        }
+//
+//        // 8. INTENT CLICK TO DETAILS
+//        holder.itemView.setOnClickListener {
+//            val context = holder.itemView.context
+//            val intent = Intent(context, ProductDetailsActivity::class.java)
+//            intent.putExtra("PRODUCT_ID", product.id)
+//            context.startActivity(intent)
+//        }
+//    }
+
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
         val product = productList[position]
 
-        // 1. TITLE
-        holder.txtTitle.text = product.name ?: "Product Name"
+        // 1. TITLE & BRAND
+        holder.txtTitle.text = product.title ?: "Unknown Product"
+        holder.txtBrand.text = product.brand ?: "CityBasket"
 
-        // 2. BRAND (Safe extraction check)
-        // Agar details array null/empty hai toh safe "CityBasket" standard string fallback diya
-        holder.txtBrand.text = try {
-            product.details?.getOrNull(0) ?: "Brand"
-        } catch (e: Exception) {
-            "Brand"
+        // 2. PRICING & DISCOUNT
+        val basePrice = product.pricing?.sellingPrice ?: 0.0
+        holder.txtPrice.text = "₹${basePrice.toInt()}"
+
+        val discount = product.pricing?.discount ?: 0.0
+        holder.txtDiscount.text = "${discount.toInt()}% OFF"
+
+//         Logic for original price if discount exists
+        product.pricing?.mrp?.let {
+            holder.txtOriginalPrice.text = "₹${it.toInt()}"
+            holder.txtOriginalPrice.paintFlags = holder.txtOriginalPrice.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+//            holder.txtDiscount.visibility = View.VISIBLE
+            // Optional: Calculate % here if needed
+        } ?: run {
+            holder.txtOriginalPrice.visibility = View.GONE
+//            holder.txtDiscount.visibility = View.GONE
         }
 
-        // 3. RATING
-        holder.txtRating.text = "4.5"
-
-        // 4. PRICE PARSING (Most Critical Crash point)
-        // Agar price list array format me nahi aa rahi direct string/int hai, toh crash se bachayega
-        val finalPrice = try {
-            product.price?.getOrNull(0) ?: 0
-        } catch (e: Exception) {
-            0
-        }
-        holder.txtPrice.text = "₹$finalPrice"
-
-        // 5. ORIGINAL PRICE & DISCOUNT
-        val discountPercent = product.discount ?: 0
-        val originalPrice = finalPrice + ((finalPrice * discountPercent) / 100)
-        holder.txtOriginalPrice.text = "₹$originalPrice"
-        holder.txtOriginalPrice.paintFlags = holder.txtOriginalPrice.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-
-        holder.txtDiscount.text = "$discountPercent% OFF"
-
-        // 6. IMAGE PARSING WITH ABSOLUTE IP ADDRESS CHECK
-        // Agar database me product image online link nahi hai toh URL format absolute banao
-        val rawImage = try {
-            product.images?.getOrNull(0)
-        } catch (e: Exception) {
-            null
-        }
-
+        // 3. IMAGE
         val finalImageUrl = when {
-            rawImage.isNullOrEmpty() -> ""
-            rawImage.startsWith("http") -> rawImage
-            else -> "http://10.0.2.2:5000/${rawImage.trimStart('/')}" // ⚠️ Apna node server port match kar lena
+            product.image.isNullOrEmpty() -> ""
+            product.image.startsWith("http") -> product.image
+            else -> "http://10.0.2.2:5000/${product.image.trimStart('/')}"
         }
 
         Glide.with(holder.itemView.context)
@@ -89,27 +151,21 @@ class HomeProductAdapter(
             .error(R.drawable.ic_fashion_tshirt)
             .into(holder.imgProduct)
 
-        // 7. WISHLIST CONTROL
-        if (product.isWishlisted) {
-            holder.imgWishlist.setImageResource(R.drawable.heart)
-        } else {
-            holder.imgWishlist.setImageResource(R.drawable.ic_heart)
-        }
+        // 4. WISHLIST & CLICK
+        holder.imgWishlist.setImageResource(if (product.isWishlisted) R.drawable.heart else R.drawable.ic_heart)
 
         holder.imgWishlist.setOnClickListener {
-            product.id?.let { productId ->
+            product.productId?.let { id ->
                 product.isWishlisted = !product.isWishlisted
                 notifyItemChanged(position)
-                onWishlistClick(productId)
+                onWishlistClick(id)
             }
         }
 
-        // 8. INTENT CLICK TO DETAILS
         holder.itemView.setOnClickListener {
-            val context = holder.itemView.context
-            val intent = Intent(context, ProductDetailsActivity::class.java)
+            val intent = Intent(holder.itemView.context, ProductDetailsActivity::class.java)
             intent.putExtra("PRODUCT_ID", product.id)
-            context.startActivity(intent)
+            holder.itemView.context.startActivity(intent)
         }
     }
 

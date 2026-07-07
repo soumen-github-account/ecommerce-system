@@ -1,3 +1,9 @@
 package data.model
 
-data class DetailItem()
+data class DetailItem(
+
+    val title:String,
+
+    val value:String
+
+)

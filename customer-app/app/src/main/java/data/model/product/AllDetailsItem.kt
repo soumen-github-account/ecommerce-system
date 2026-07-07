@@ -1,4 +1,3 @@
 package data.model.product
 
-class AllDetailsItem {
-}
+sealed class AllDetailsItem

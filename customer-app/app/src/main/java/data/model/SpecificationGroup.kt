@@ -1,4 +1,9 @@
 package data.model
 
-class SpecificationGroup {
-}
+data class SpecificationGroup(
+
+    val title:String,
+
+    val items:List<DetailItem>
+
+)

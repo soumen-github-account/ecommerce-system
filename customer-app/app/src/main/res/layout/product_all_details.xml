@@ -1,6 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent">
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- All Details Header -->
+
+        <LinearLayout
+            android:id="@+id/layoutDetailsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="All details"
+                android:textColor="#212121"
+                android:textSize="22sp"
+                android:textStyle="bold"/>
+
+            <ImageView
+                android:id="@+id/imgDetailsArrow"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_arrow_up"/>
+        </LinearLayout>
+
+        <!-- Tabs -->
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingStart="16dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFeatures"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:text="Features"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipSpecifications"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_marginStart="8dp"
+                    android:text="Specifications"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipDescription"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_marginStart="8dp"
+                    android:text="Description"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipManufacturer"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_marginStart="8dp"
+                    android:text="Manufacturer"/>
+
+            </LinearLayout>
+
+        </HorizontalScrollView>
+
+        <!-- Specifications Recycler -->
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:paddingTop="16dp"/>
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

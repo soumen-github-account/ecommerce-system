@@ -8,32 +8,6 @@ export default function VariantCard({ index, remove }) {
 
   if (!variant) return null;
 
-  // const handleImageUpload = (e) => {
-  //   const files = Array.from(e.target.files);
-
-  //   const readers = files.map((file) => {
-  //     console.log("Selected files:", files);
-  //     return new Promise((resolve) => {
-  //       const reader = new FileReader();
-
-  //       reader.onload = () =>
-  //         resolve({
-  //           url: reader.result, // preview
-  //           file: file,         // actual file
-  //           isPrimary: false,
-  //         });
-
-  //       reader.readAsDataURL(file);
-  //     });
-  //   });
-
-  //   Promise.all(readers).then((newImages) => {
-  //     setValue(`variants.${index}.images`, [
-  //       ...(variant.images || []),
-  //       ...newImages,
-  //     ]);
-  //   });
-  // };
   const handleImageUpload = async (e) => {
   const files = Array.from(e.target.files);
 

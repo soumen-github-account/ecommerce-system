@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+
+    android:id="@+id/txtTab"
+
+    android:layout_width="wrap_content"
+
+    android:layout_height="40dp"
+
+    android:gravity="center"
+
+    android:paddingStart="22dp"
+
+    android:paddingEnd="22dp"
+
+    android:textSize="14sp"
+
+    android:textStyle="bold"
+
+    android:textColor="#424242"
+
+    android:background="@drawable/bg_tab_unselected"/>

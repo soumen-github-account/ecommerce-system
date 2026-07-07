@@ -1,8 +1,8 @@
 package data.remote.response
 
-import data.model.product.Product
+import data.model.product.ProductDetails
 
 data class ProductDetailsResponse(
     val success: Boolean,
-    val product: Product
+    val product: ProductDetails
 )

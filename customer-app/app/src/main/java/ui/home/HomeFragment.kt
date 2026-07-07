@@ -18,6 +18,7 @@ import com.ecommerce.citybasket.ui.home.HomeSectionAdapter
 import com.ecommerce.citybasket.ui.home.TopCategoryAdapter
 import com.ecommerce.citybasket.ui.search.SearchActivity
 import com.google.android.material.appbar.AppBarLayout
+import com.google.gson.Gson
 import data.model.HomeSection
 import data.model.category.Category
 import data.model.category.TopCategory
