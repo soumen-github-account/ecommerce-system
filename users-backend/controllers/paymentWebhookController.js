@@ -109,6 +109,7 @@ import { Cart } from "../models/CartModel.js";
 import { Product } from "../models/ProductModel.js";
 
 export const razorpayWebhook = async (req, res) => {
+    console.log("webhook hit")
     const signature = req.headers["x-razorpay-signature"];
 
     const expected = crypto

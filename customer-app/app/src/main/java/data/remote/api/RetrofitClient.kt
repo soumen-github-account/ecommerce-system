@@ -11,7 +11,7 @@ object RetrofitClient {
 
     // Yahan switch karo
     private const val IS_LOCAL = true
-    private val BASE_URL = "http://192.168.1.5:8000/"
+    private val BASE_URL = "https://system-customer-backend.onrender.com/"
     private val retrofit by lazy {
 
         Retrofit.Builder()

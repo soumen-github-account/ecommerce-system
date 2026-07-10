@@ -293,6 +293,7 @@ class PaymentFragment : Fragment(), com.razorpay.PaymentResultListener {
     private fun openRazorpayCheckoutForCard(session: PaymentSession) {
         lifecycleScope.launch {
             val key = getRazorpayKey()
+            Log.d("RAZORPAY_KEY", key ?: "NULL")
             if (key.isNullOrEmpty()) {
                 isPaymentInProgress = false
                 Toast.makeText(requireContext(), "Razorpay key missing", Toast.LENGTH_SHORT).show()
