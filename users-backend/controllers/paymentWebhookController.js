@@ -109,15 +109,7 @@ import { Cart } from "../models/CartModel.js";
 import { Product } from "../models/ProductModel.js";
 
 export const razorpayWebhook = async (req, res) => {
-    console.log("webhook hit")
-    console.log("Signature:", signature);
-    console.log("Expected :", expected);
-
-    console.log("Body Type =", typeof req.body);
-
-    console.log("Body =", req.body);
-
-    console.log("Payload =", payload);
+    console.log("webhook hit");
 
     const signature = req.headers["x-razorpay-signature"];
 
@@ -126,15 +118,19 @@ export const razorpayWebhook = async (req, res) => {
         .update(JSON.stringify(req.body))
         .digest("hex");
 
-    if (signature !== expected) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid Signature"
-        });
-    }
+    console.log("Signature =", signature);
+    console.log("Expected =", expected);
+
+    console.log("Body Type =", typeof req.body);
+    console.log("Body =", req.body);
 
     const payload = JSON.parse(req.body.toString());
+
+    console.log("Payload =", payload);
+
     const event = payload.event;
+
+    console.log("Event =", event);
 
     //----------------------------------------
     // PAYMENT SUCCESS
