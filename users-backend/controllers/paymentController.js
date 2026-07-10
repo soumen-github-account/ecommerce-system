@@ -494,6 +494,11 @@ export const createPaymentSession = async (req, res) => {
             }
 
         });
+        
+        await PaymentSession.deleteMany({
+            orderId: order._id,
+            status: "CREATED"
+        });
 
         const session = await PaymentSession.create({
 

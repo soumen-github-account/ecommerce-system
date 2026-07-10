@@ -109,50 +109,55 @@ import { Cart } from "../models/CartModel.js";
 import { Product } from "../models/ProductModel.js";
 
 export const razorpayWebhook = async (req, res) => {
-    console.log("webhook hit");
+console.log("Webhook Hit");
 
-    const signature = req.headers["x-razorpay-signature"];
+    const signature=req.headers["x-razorpay-signature"];
 
-    const expected = crypto
-        .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
-        .update(JSON.stringify(req.body))
+    const expected=crypto
+        .createHmac(
+            "sha256",
+            process.env.RAZORPAY_WEBHOOK_SECRET
+        )
+        .update(req.body)
         .digest("hex");
 
-    console.log("Signature =", signature);
-    console.log("Expected =", expected);
+    console.log("Signature =",signature);
+    console.log("Expected =",expected);
 
-    console.log("Body Type =", typeof req.body);
-    console.log("Body =", req.body);
+    if(signature!==expected){
 
-    const payload = JSON.parse(req.body.toString());
+        return res.status(400).json({
+            success:false,
+            message:"Invalid Signature"
+        });
 
-    console.log("Payload =", payload);
+    }
 
-    const event = payload.event;
+    const payload=JSON.parse(req.body.toString());
 
-    console.log("Event =", event);
+    console.log(payload);
 
+    const event=payload.event;
+
+    console.log(event);
     //----------------------------------------
     // PAYMENT SUCCESS
     //----------------------------------------
 
     if (event === "payment.captured") {
 
-        const payment = req.body.payload.payment.entity;
-
+        const payment = payload.payload.payment.entity;
         const gatewayOrderId = payment.order_id;
         const gatewayPaymentId = payment.id;
-        console.log("Event =", event);
 
-        console.log("Gateway Order =", gatewayOrderId);
-
-        console.log("Gateway Payment =", gatewayPaymentId);
+        console.log(gatewayOrderId);
+        console.log(gatewayPaymentId);
 
         const mongoSession = await mongoose.startSession();
 
         try {
 
-            mongoSession.startTransaction();
+            await mongoSession.startTransaction();
 
             const paymentSession =
                 await PaymentSession.findOne({
@@ -193,6 +198,8 @@ export const razorpayWebhook = async (req, res) => {
                 session:mongoSession
             });
 
+            console.log("Payment Session =", paymentSession);
+
             //------------------------------------
             // Order
             //------------------------------------
@@ -200,6 +207,8 @@ export const razorpayWebhook = async (req, res) => {
             const order = await Order.findById(
                 paymentSession.orderId
             ).session(mongoSession);
+
+            console.log("Order =", order);
 
             if (!order) {
 
@@ -276,7 +285,7 @@ export const razorpayWebhook = async (req, res) => {
 
     if(event==="payment.failed"){
 
-        const payment=req.body.payload.payment.entity;
+        const payment = payload.payload.payment.entity;
 
         const paymentSession=
             await PaymentSession.findOne({

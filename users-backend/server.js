@@ -8,17 +8,16 @@ import userRouter from "./routes/userRoute.js"
 import productRouter from "./routes/productRoute.js"
 import paymentRouter from "./routes/paymentRoutes.js"
 import admin from "./config/firebase.js"
+import { razorpayWebhook } from "./controllers/paymentWebhookController.js"
 
 const PORT = process.env.PORT || 8000
 const app = express()
 app.use(cors())
 
-
-app.use(
+app.post(
     "/api/payment/webhook",
-    express.raw({
-        type: "application/json"
-    })
+    express.raw({ type: "application/json" }),
+    razorpayWebhook
 );
 
 app.use(express.json())
