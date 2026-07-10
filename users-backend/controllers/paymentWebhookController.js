@@ -110,6 +110,15 @@ import { Product } from "../models/ProductModel.js";
 
 export const razorpayWebhook = async (req, res) => {
     console.log("webhook hit")
+    console.log("Signature:", signature);
+    console.log("Expected :", expected);
+
+    console.log("Body Type =", typeof req.body);
+
+    console.log("Body =", req.body);
+
+    console.log("Payload =", payload);
+
     const signature = req.headers["x-razorpay-signature"];
 
     const expected = crypto
@@ -127,7 +136,6 @@ export const razorpayWebhook = async (req, res) => {
     const payload = JSON.parse(req.body.toString());
     const event = payload.event;
 
-
     //----------------------------------------
     // PAYMENT SUCCESS
     //----------------------------------------
@@ -138,6 +146,11 @@ export const razorpayWebhook = async (req, res) => {
 
         const gatewayOrderId = payment.order_id;
         const gatewayPaymentId = payment.id;
+        console.log("Event =", event);
+
+        console.log("Gateway Order =", gatewayOrderId);
+
+        console.log("Gateway Payment =", gatewayPaymentId);
 
         const mongoSession = await mongoose.startSession();
 
@@ -243,16 +256,14 @@ export const razorpayWebhook = async (req, res) => {
         }
 
         catch(err){
-
+            console.error("WEBHOOK ERROR");
+            console.error(err);
+            console.error(err.stack);
             await mongoSession.abortTransaction();
-
-            console.log(err);
-
             return res.status(500).json({
                 success:false,
                 message:err.message
             });
-
         }
 
         finally{
