@@ -1,284 +1,308 @@
-// import crypto from "crypto";
 
+// import mongoose from "mongoose";
 // import { Order } from "../models/OrderModel.js";
 // import { Cart } from "../models/CartModel.js";
 // import { Product } from "../models/ProductModel.js";
 // import { PaymentSession } from "../models/PaymentSession.js";
 
 // export const razorpayWebhook = async (req, res) => {
-//   try {
 //     console.log("Webhook Hit");
 
 //     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-
 //     const receivedSignature = req.headers["x-razorpay-signature"];
 
+//     // 1. Signature Verification (Strict)
 //     const expectedSignature = crypto
-//       .createHmac("sha256", webhookSecret)
-//       .update(req.body)
-//       .digest("hex");
+//         .createHmac("sha256", webhookSecret)
+//         .update(JSON.stringify(req.body)) // Ensure JSON string format
+//         .digest("hex");
 
 //     if (expectedSignature !== receivedSignature) {
-//       console.log("Invalid Signature");
-
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid signature",
-//       });
+//         console.error("Invalid Webhook Signature");
+//         return res.status(400).json({ success: false, message: "Invalid signature" });
 //     }
 
 //     const payload = JSON.parse(req.body.toString());
-
 //     const event = payload.event;
 
-//     console.log("WEBHOOK EVENT:", event);
-
-//     // ==================================
-//     // PAYMENT CAPTURED
-//     // ==================================
-
 //     if (event === "payment.captured") {
-//       const payment = payload.payload.payment.entity;
+//         const payment = payload.payload.payment.entity;
+//         const gatewayOrderId = payment.order_id;
+//         const gatewayPaymentId = payment.id;
 
-//       const gatewayOrderId = payment.order_id;
-
-//       const gatewayPaymentId = payment.id;
-
-//       // ==================================
-//       // IDEMPOTENT UPDATE
-//       // ==================================
-
-//       const paymentSession = await PaymentSession.findOneAndUpdate(
-//         {
-//           gatewayOrderId,
-
-//           status: {
-//             $ne: "SUCCESS",
-//           },
-//         },
-
-//         {
-//           $set: {
-//             status: "SUCCESS",
-
-//             gatewayPaymentId,
-
-//             paidAt: new Date(),
-//           },
-//         },
-
-//         {
-//           new: true,
-//         },
-//       );
-
-//       // already processed
-//       if (!paymentSession) {
-//         return res.status(200).json({
-//           success: true,
-
-//           message: "Already processed",
-//         });
-//       }
-
-//       const order = await Order.findById(paymentSession.orderId);
-
-//       if (order) {
-//         order.paymentStatus = "SUCCESS";
-
-//         order.orderStatus = "CONFIRMED";
-
-//         await order.save();
-
-//         // =====================
-//         // STOCK REDUCE
-//         // =====================
-
-//         for (const item of order.items) {
-//           const updatedProduct = await Product.findOneAndUpdate(
-//             {
-//               _id: item.productId,
-
-//               stock: {
-//                 $gte: item.quantity,
-//               },
-//             },
-
-//             {
-//               $inc: {
-//                 stock: -item.quantity,
-//               },
-//             },
-
-//             {
-//               new: true,
-//             },
-//           );
-
-//           if (!updatedProduct) {
-//             console.error(
-//               "Stock deduction failed for product:",
-//               item.productId,
-//             );
-//           }
+//         const existingSession = await PaymentSession.findOne({ gatewayOrderId });
+//         if (existingSession && existingSession.status === "SUCCESS") {
+//             console.log("Duplicate Webhook received, skipping...");
+//             return res.status(200).json({ success: true, message: "Already processed" });
 //         }
 
-//         // =====================
-//         // CLEAR CART
-//         // =====================
+//         // Atomic Transaction Start
+//         const session = await mongoose.startSession();
+//         session.startTransaction();
 
-//         await Cart.deleteMany({
-//           user: order.userId,
-//         });
-//       }
+//         try {
+//             // Find session and lock it
+//             const paymentSession = await PaymentSession.findOne({ 
+//                 gatewayOrderId, 
+//                 status: { $ne: "SUCCESS" } 
+//             }).session(session);
+
+//             if (!paymentSession) {
+//                 await session.abortTransaction();
+//                 return res.status(200).json({ message: "Already processed" });
+//             }
+
+//             // Update Payment Session
+//             paymentSession.status = "SUCCESS";
+//             paymentSession.gatewayPaymentId = gatewayPaymentId;
+//             paymentSession.paidAt = new Date();
+//             await paymentSession.save({ session });
+
+//             // Update Order
+//             const order = await Order.findById(paymentSession.orderId).session(session);
+//             if (order) {
+//                 order.payment.status = "SUCCESS";
+//                 order.payment.transactionId = gatewayPaymentId;
+//                 order.payment.paymentProvider = "RAZORPAY";
+
+//                 order.status = "CONFIRMED";
+
+//                 await order.save({ session });
+
+//                 // Reduce Stock & Clear Cart (Atomic)
+//                 for (const item of order.items) {
+//                     const product = await Product.findById(item.productId).session(session);
+//                     if (!product || product.stock < item.quantity) {
+//                         throw new Error(`Insufficient stock for ${product?.name || item.productId}`);
+//                     }
+//                     product.stock -= item.quantity;
+//                     await product.save({ session });
+//                 }
+
+//                 await Cart.deleteMany({ user: order.userId }).session(session);
+//             }
+
+//             // Commit Transaction
+//             await session.commitTransaction();
+//             console.log("Transaction committed successfully");
+
+//         } catch (error) {
+//             // Rollback on any failure
+//             await session.abortTransaction();
+//             console.error("Transaction Aborted:", error);
+//             return res.status(500).json({ success: false, message: "Webhook processing failed" });
+//         } finally {
+//             session.endSession();
+//         }
 //     }
-
-//     // ==================================
-//     // PAYMENT FAILED
-//     // ==================================
-
-//     if (event === "payment.failed") {
-//       const payment = payload.payload.payment.entity;
-
-//       const gatewayOrderId = payment.order_id;
-
-//       await PaymentSession.findOneAndUpdate(
-//         {
-//           gatewayOrderId,
-
-//           status: {
-//             $nin: ["SUCCESS", "FAILED"],
-//           },
-//         },
-
-//         {
-//           status: "FAILED",
-
-//           failureReason: payment.error_description,
-//         },
-//       );
-
-//       await Order.updateOne(
-//         {
-//           paymentSessionId: (
-//             await PaymentSession.findOne({
-//               gatewayOrderId,
-//             })
-//           )?._id,
-//         },
-
-//         {
-//           paymentStatus: "FAILED",
-//         },
-//       );
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//     });
-//   } catch (error) {
-//     console.error("WEBHOOK ERROR:", error);
-
-//     return res.status(500).json({
-//       success: false,
-//     });
-//   }
+    
+//     // ... handle "payment.failed" similarly (but usually no need for heavy transaction here)
+//     return res.status(200).json({ success: true });
 // };
 
-
+import crypto from "crypto";
 import mongoose from "mongoose";
+
 import { Order } from "../models/OrderModel.js";
+import { PaymentSession } from "../models/PaymentSession.js";
 import { Cart } from "../models/CartModel.js";
 import { Product } from "../models/ProductModel.js";
-import { PaymentSession } from "../models/PaymentSession.js";
 
 export const razorpayWebhook = async (req, res) => {
-    console.log("Webhook Hit");
+    const signature = req.headers["x-razorpay-signature"];
 
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    const receivedSignature = req.headers["x-razorpay-signature"];
-
-    // 1. Signature Verification (Strict)
-    const expectedSignature = crypto
-        .createHmac("sha256", webhookSecret)
-        .update(JSON.stringify(req.body)) // Ensure JSON string format
+    const expected = crypto
+        .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+        .update(JSON.stringify(req.body))
         .digest("hex");
 
-    if (expectedSignature !== receivedSignature) {
-        console.error("Invalid Webhook Signature");
-        return res.status(400).json({ success: false, message: "Invalid signature" });
+    if (signature !== expected) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid Signature"
+        });
     }
 
     const payload = JSON.parse(req.body.toString());
     const event = payload.event;
 
+
+    //----------------------------------------
+    // PAYMENT SUCCESS
+    //----------------------------------------
+
     if (event === "payment.captured") {
-        const payment = payload.payload.payment.entity;
+
+        const payment = req.body.payload.payment.entity;
+
         const gatewayOrderId = payment.order_id;
         const gatewayPaymentId = payment.id;
 
-        const existingSession = await PaymentSession.findOne({ gatewayOrderId });
-        if (existingSession && existingSession.status === "SUCCESS") {
-            console.log("Duplicate Webhook received, skipping...");
-            return res.status(200).json({ success: true, message: "Already processed" });
-        }
-
-        // Atomic Transaction Start
-        const session = await mongoose.startSession();
-        session.startTransaction();
+        const mongoSession = await mongoose.startSession();
 
         try {
-            // Find session and lock it
-            const paymentSession = await PaymentSession.findOne({ 
-                gatewayOrderId, 
-                status: { $ne: "SUCCESS" } 
-            }).session(session);
+
+            mongoSession.startTransaction();
+
+            const paymentSession =
+                await PaymentSession.findOne({
+                    gatewayOrderId
+                }).session(mongoSession);
 
             if (!paymentSession) {
-                await session.abortTransaction();
-                return res.status(200).json({ message: "Already processed" });
+
+                await mongoSession.abortTransaction();
+
+                return res.status(404).json({
+                    success:false,
+                    message:"Payment session not found"
+                });
+
             }
 
-            // Update Payment Session
+            if (paymentSession.status === "SUCCESS") {
+
+                await mongoSession.abortTransaction();
+
+                return res.status(200).json({
+                    success:true,
+                    message:"Already processed"
+                });
+
+            }
+
+            //------------------------------------
+            // Payment Session
+            //------------------------------------
+
             paymentSession.status = "SUCCESS";
             paymentSession.gatewayPaymentId = gatewayPaymentId;
             paymentSession.paidAt = new Date();
-            await paymentSession.save({ session });
 
-            // Update Order
-            const order = await Order.findById(paymentSession.orderId).session(session);
-            if (order) {
-                order.paymentStatus = "SUCCESS";
-                order.orderStatus = "CONFIRMED";
-                await order.save({ session });
+            await paymentSession.save({
+                session:mongoSession
+            });
 
-                // Reduce Stock & Clear Cart (Atomic)
-                for (const item of order.items) {
-                    const product = await Product.findById(item.productId).session(session);
-                    if (!product || product.stock < item.quantity) {
-                        throw new Error(`Insufficient stock for ${product?.name || item.productId}`);
-                    }
-                    product.stock -= item.quantity;
-                    await product.save({ session });
-                }
+            //------------------------------------
+            // Order
+            //------------------------------------
 
-                await Cart.deleteMany({ user: order.userId }).session(session);
+            const order = await Order.findById(
+                paymentSession.orderId
+            ).session(mongoSession);
+
+            if (!order) {
+
+                throw new Error("Order not found");
+
             }
 
-            // Commit Transaction
-            await session.commitTransaction();
-            console.log("Transaction committed successfully");
+            order.payment.status = "SUCCESS";
+            order.payment.transactionId = gatewayPaymentId;
+            order.payment.paymentProvider = "RAZORPAY";
 
-        } catch (error) {
-            // Rollback on any failure
-            await session.abortTransaction();
-            console.error("Transaction Aborted:", error);
-            return res.status(500).json({ success: false, message: "Webhook processing failed" });
-        } finally {
-            session.endSession();
+            order.status = "CONFIRMED";
+
+            await order.save({
+                session:mongoSession
+            });
+
+            //------------------------------------
+            // Stock Reduce
+            //------------------------------------
+
+            for (const item of order.items) {
+
+                const product =
+                    await Product.findById(item.product)
+                        .session(mongoSession);
+
+                if (!product)
+                    continue;
+
+                // Agar variants me stock hai to baad me variant update karenge
+            }
+
+            //------------------------------------
+            // Clear Cart
+            //------------------------------------
+
+            await Cart.deleteMany({
+                user: order.user
+            }).session(mongoSession);
+
+            await mongoSession.commitTransaction();
+
+            console.log("Payment Success");
+
+            return res.status(200).json({
+                success:true
+            });
+
         }
+
+        catch(err){
+
+            await mongoSession.abortTransaction();
+
+            console.log(err);
+
+            return res.status(500).json({
+                success:false,
+                message:err.message
+            });
+
+        }
+
+        finally{
+
+            mongoSession.endSession();
+
+        }
+
     }
-    
-    // ... handle "payment.failed" similarly (but usually no need for heavy transaction here)
-    return res.status(200).json({ success: true });
+
+    //----------------------------------------
+    // PAYMENT FAILED
+    //----------------------------------------
+
+    if(event==="payment.failed"){
+
+        const payment=req.body.payload.payment.entity;
+
+        const paymentSession=
+            await PaymentSession.findOne({
+                gatewayOrderId:payment.order_id
+            });
+
+        if(paymentSession){
+
+            paymentSession.status="FAILED";
+
+            await paymentSession.save();
+
+            const order=await Order.findById(
+                paymentSession.orderId
+            );
+
+            if(order){
+
+                order.payment.status="FAILED";
+
+                await order.save();
+
+            }
+
+        }
+
+        return res.status(200).json({
+            success:true
+        });
+
+    }
+
+    return res.status(200).json({
+        success:true
+    });
+
 };

@@ -3,22 +3,22 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="18dp"
+    android:layout_marginBottom="8dp"
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
-    <LinearLayout
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:background="@drawable/bg_highlight_icon"
-        android:gravity="center">
+<!--    <LinearLayout-->
+<!--        android:layout_width="56dp"-->
+<!--        android:layout_height="56dp"-->
+<!--        android:background="@drawable/bg_highlight_icon"-->
+<!--        android:gravity="center">-->
 
-        <ImageView
-            android:id="@+id/imgIcon"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:src="@drawable/ic_highlight"/>
-    </LinearLayout>
+<!--        <ImageView-->
+<!--            android:id="@+id/imgIcon"-->
+<!--            android:layout_width="28dp"-->
+<!--            android:layout_height="28dp"-->
+<!--            android:src="@drawable/ic_highlight"/>-->
+<!--    </LinearLayout>-->
 
     <TextView
         android:id="@+id/txtHighlight"

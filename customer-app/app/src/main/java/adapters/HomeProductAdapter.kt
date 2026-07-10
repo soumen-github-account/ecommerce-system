@@ -2,6 +2,7 @@ package com.ecommerce.citybasket.ui.home
 
 import android.content.Intent
 import android.graphics.Paint
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,160 +15,224 @@ import com.ecommerce.citybasket.ui.product.ProductDetailsActivity
 import data.model.product.Product
 
 class HomeProductAdapter(
-    private val productList: List<Product>,
-    private val onWishlistClick: (productId: String) -> Unit
+
+    private val productList: MutableList<Product>,
+
+    private val onWishlistClick: (
+        productId: String,
+        variantId: String,
+        sellerId: String,
+        isWishlisted: Boolean,
+        position: Int
+    ) -> Unit
+
 ) : RecyclerView.Adapter<HomeProductAdapter.ProductViewHolder>() {
 
-    class ProductViewHolder(v: View) : RecyclerView.ViewHolder(v) {
-        val imgProduct: ImageView = v.findViewById(R.id.imgProduct)
-        val txtBrand: TextView = v.findViewById(R.id.txtBrand)
-        val txtRating: TextView = v.findViewById(R.id.txtRating)
-        val txtTitle: TextView = v.findViewById(R.id.txtTitle)
-        val txtPrice: TextView = v.findViewById(R.id.txtPrice)
-        val txtOriginalPrice: TextView = v.findViewById(R.id.txtOriginalPrice)
-        val txtDiscount: TextView = v.findViewById(R.id.txtDiscount)
-        val imgWishlist: ImageView = v.findViewById(R.id.imgWishlist)
+    class ProductViewHolder(itemView: View) :
+        RecyclerView.ViewHolder(itemView) {
+
+        val imgProduct: ImageView =
+            itemView.findViewById(R.id.imgProduct)
+
+        val imgWishlist: ImageView =
+            itemView.findViewById(R.id.imgWishlist)
+
+        val txtTitle: TextView =
+            itemView.findViewById(R.id.txtTitle)
+
+        val txtBrand: TextView =
+            itemView.findViewById(R.id.txtBrand)
+
+        val txtPrice: TextView =
+            itemView.findViewById(R.id.txtPrice)
+
+        val txtOriginalPrice: TextView =
+            itemView.findViewById(R.id.txtOriginalPrice)
+
+        val txtDiscount: TextView =
+            itemView.findViewById(R.id.txtDiscount)
+
+        val txtRating: TextView =
+            itemView.findViewById(R.id.txtRating)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): ProductViewHolder {
+
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_product_card, parent, false)
+            .inflate(
+                R.layout.item_product_card,
+                parent,
+                false
+            )
+
         return ProductViewHolder(view)
     }
 
-//    override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
-//        val product = productList[position]
-//
-//        // 1. TITLE
-//        holder.txtTitle.text = product.name ?: "Product Name"
-//
-//        // 2. BRAND (Safe extraction check)
-//        // Agar details array null/empty hai toh safe "CityBasket" standard string fallback diya
-//        holder.txtBrand.text = try {
-//            product.details?.getOrNull(0) ?: "Brand"
-//        } catch (e: Exception) {
-//            "Brand"
-//        }
-//
-//        // 3. RATING
-//        holder.txtRating.text = "4.5"
-//
-//        // 4. PRICE PARSING (Most Critical Crash point)
-//        // Agar price list array format me nahi aa rahi direct string/int hai, toh crash se bachayega
-//        val finalPrice = try {
-//            product.price?.getOrNull(0) ?: 0
-//        } catch (e: Exception) {
-//            0
-//        }
-//        holder.txtPrice.text = "₹$finalPrice"
-//
-//        // 5. ORIGINAL PRICE & DISCOUNT
-//        val discountPercent = product.discount ?: 0
-//        val originalPrice = finalPrice + ((finalPrice * discountPercent) / 100)
-//        holder.txtOriginalPrice.text = "₹$originalPrice"
-//        holder.txtOriginalPrice.paintFlags = holder.txtOriginalPrice.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-//
-//        holder.txtDiscount.text = "$discountPercent% OFF"
-//
-//        // 6. IMAGE PARSING WITH ABSOLUTE IP ADDRESS CHECK
-//        // Agar database me product image online link nahi hai toh URL format absolute banao
-//        val rawImage = try {
-//            product.images?.getOrNull(0)
-//        } catch (e: Exception) {
-//            null
-//        }
-//
-//        val finalImageUrl = when {
-//            rawImage.isNullOrEmpty() -> ""
-//            rawImage.startsWith("http") -> rawImage
-//            else -> "http://10.0.2.2:5000/${rawImage.trimStart('/')}" // ⚠️ Apna node server port match kar lena
-//        }
-//
-//        Glide.with(holder.itemView.context)
-//            .load(finalImageUrl)
-//            .placeholder(R.drawable.ic_fashion_tshirt)
-//            .error(R.drawable.ic_fashion_tshirt)
-//            .into(holder.imgProduct)
-//
-//        // 7. WISHLIST CONTROL
-//        if (product.isWishlisted) {
-//            holder.imgWishlist.setImageResource(R.drawable.heart)
-//        } else {
-//            holder.imgWishlist.setImageResource(R.drawable.ic_heart)
-//        }
-//
-//        holder.imgWishlist.setOnClickListener {
-//            product.id?.let { productId ->
-//                product.isWishlisted = !product.isWishlisted
-//                notifyItemChanged(position)
-//                onWishlistClick(productId)
-//            }
-//        }
-//
-//        // 8. INTENT CLICK TO DETAILS
-//        holder.itemView.setOnClickListener {
-//            val context = holder.itemView.context
-//            val intent = Intent(context, ProductDetailsActivity::class.java)
-//            intent.putExtra("PRODUCT_ID", product.id)
-//            context.startActivity(intent)
-//        }
-//    }
+    override fun onBindViewHolder(
+        holder: ProductViewHolder,
+        position: Int
+    ) {
 
-    override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
         val product = productList[position]
 
-        // 1. TITLE & BRAND
-        holder.txtTitle.text = product.title ?: "Unknown Product"
-        holder.txtBrand.text = product.brand ?: "CityBasket"
+        //---------------------------
+        // TITLE
+        //---------------------------
 
-        // 2. PRICING & DISCOUNT
-        val basePrice = product.pricing?.sellingPrice ?: 0.0
-        holder.txtPrice.text = "₹${basePrice.toInt()}"
+        holder.txtTitle.text =
+            product.title ?: ""
 
-        val discount = product.pricing?.discount ?: 0.0
-        holder.txtDiscount.text = "${discount.toInt()}% OFF"
+        holder.txtBrand.text =
+            product.brand ?: ""
 
-//         Logic for original price if discount exists
-        product.pricing?.mrp?.let {
-            holder.txtOriginalPrice.text = "₹${it.toInt()}"
-            holder.txtOriginalPrice.paintFlags = holder.txtOriginalPrice.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-//            holder.txtDiscount.visibility = View.VISIBLE
-            // Optional: Calculate % here if needed
-        } ?: run {
-            holder.txtOriginalPrice.visibility = View.GONE
-//            holder.txtDiscount.visibility = View.GONE
-        }
+        holder.txtRating.text = "4.5"
 
-        // 3. IMAGE
-        val finalImageUrl = when {
-            product.image.isNullOrEmpty() -> ""
-            product.image.startsWith("http") -> product.image
-            else -> "http://10.0.2.2:5000/${product.image.trimStart('/')}"
-        }
+        //---------------------------
+        // PRICE
+        //---------------------------
+
+        val selling =
+            product.pricing?.sellingPrice ?: 0.0
+
+        val mrp =
+            product.pricing?.mrp ?: 0.0
+
+        val discount =
+            product.pricing?.discount ?: 0.0
+
+        holder.txtPrice.text =
+            "₹${selling.toInt()}"
+
+        holder.txtOriginalPrice.text =
+            "₹${mrp.toInt()}"
+
+        holder.txtOriginalPrice.paintFlags =
+            holder.txtOriginalPrice.paintFlags or
+                    Paint.STRIKE_THRU_TEXT_FLAG
+
+        holder.txtDiscount.text =
+            "${discount.toInt()}% OFF"
+
+        //---------------------------
+        // IMAGE
+        //---------------------------
 
         Glide.with(holder.itemView.context)
-            .load(finalImageUrl)
+            .load(product.image)
             .placeholder(R.drawable.ic_fashion_tshirt)
             .error(R.drawable.ic_fashion_tshirt)
             .into(holder.imgProduct)
 
-        // 4. WISHLIST & CLICK
-        holder.imgWishlist.setImageResource(if (product.isWishlisted) R.drawable.heart else R.drawable.ic_heart)
+        //---------------------------
+        // HEART
+        //---------------------------
+
+        updateWishlistIcon(holder, product.isWishlisted)
 
         holder.imgWishlist.setOnClickListener {
-            product.productId?.let { id ->
-                product.isWishlisted = !product.isWishlisted
-                notifyItemChanged(position)
-                onWishlistClick(id)
+
+            val newState = !product.isWishlisted
+
+            // Instant UI update
+
+            product.isWishlisted = newState
+
+            updateWishlistIcon(holder, newState)
+
+            product.productId?.let {
+                val productId = product.productId ?: return@setOnClickListener
+                val variantId = product.variantId ?: return@setOnClickListener
+                val sellerId = product.sellerId ?: return@setOnClickListener
+
+                onWishlistClick(
+                    productId,
+                    variantId,
+                    sellerId,
+                    newState,
+                    holder.adapterPosition
+                )
+
             }
+
         }
 
         holder.itemView.setOnClickListener {
+
+            Log.d("HOME_CLICK", "id = ${product.id}")
+            Log.d("HOME_CLICK", "productId = ${product.productId}")
+
             val intent = Intent(holder.itemView.context, ProductDetailsActivity::class.java)
-            intent.putExtra("PRODUCT_ID", product.id)
+
+            intent.putExtra("PRODUCT_ID", product.variantId)
+
             holder.itemView.context.startActivity(intent)
         }
+
     }
 
-    override fun getItemCount(): Int = productList.size
+    private fun updateWishlistIcon(
+        holder: ProductViewHolder,
+        isWishlisted: Boolean
+    ) {
+
+        if (isWishlisted) {
+
+            holder.imgWishlist.setImageResource(
+                R.drawable.heart
+            )
+
+        } else {
+
+            holder.imgWishlist.setImageResource(
+                R.drawable.ic_heart
+            )
+
+        }
+
+    }
+
+    /**
+     * API fail hone par rollback
+     */
+
+    fun rollbackWishlist(
+        position: Int
+    ) {
+
+        if (position !in productList.indices)
+            return
+
+        productList[position].isWishlisted =
+            !productList[position].isWishlisted
+
+        notifyItemChanged(position)
+
+    }
+
+    /**
+     * Wishlist page se remove
+     */
+
+    fun removeProduct(
+        position: Int
+    ) {
+
+        if (position !in productList.indices)
+            return
+
+        productList.removeAt(position)
+
+        notifyItemRemoved(position)
+
+    }
+
+    override fun getItemCount(): Int {
+
+        return productList.size
+
+    }
+
 }

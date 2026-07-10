@@ -507,10 +507,82 @@ class PaymentFragment : Fragment(), com.razorpay.PaymentResultListener {
     }
 
     override fun onPaymentSuccess(razorpayPaymentId: String?) {
-        isPaymentInProgress = false
-        Toast.makeText(requireContext(), "Payment Success", Toast.LENGTH_SHORT).show()
-        val session = (activity as CheckoutActivity).currentPaymentSession
-        navigateToOrderSuccess(session?.orderId ?: "")
+
+        Toast.makeText(
+            requireContext(),
+            "Payment Successful",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        startPollingPaymentStatus()
+    }
+
+    private fun startPollingPaymentStatus() {
+
+        val checkoutActivity = activity as? CheckoutActivity ?: return
+
+        val sessionId =
+            checkoutActivity.currentPaymentSession?.paymentSessionId ?: return
+
+        val token =
+            TokenManager(requireContext()).getToken() ?: return
+
+        pollingJob?.cancel()
+
+        pollingJob = lifecycleScope.launch {
+
+            repeat(30) {       // Maximum 60 seconds
+
+                try {
+
+                    val response =
+                        RetrofitClient.userApi.getPaymentStatus(
+                            "Bearer $token",
+                            sessionId
+                        )
+
+                    if (response.isSuccessful && response.body() != null) {
+
+                        val body = response.body()!!
+
+                        Log.d(
+                            "PAYMENT_STATUS",
+                            "${body.paymentStatus}  ${body.orderStatus}"
+                        )
+
+                        if (
+                            body.paymentStatus == "SUCCESS"
+                            &&
+                            body.orderStatus == "CONFIRMED"
+                        ) {
+
+                            navigateToOrderSuccess(
+                                checkoutActivity.orderId ?: ""
+                            )
+
+                            pollingJob?.cancel()
+
+                            return@launch
+                        }
+                    }
+
+                } catch (e: Exception) {
+
+                    Log.e(
+                        "POLLING",
+                        e.message.toString()
+                    )
+                }
+
+                delay(2000)
+            }
+
+            Toast.makeText(
+                requireContext(),
+                "Payment verification taking longer than expected.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     override fun onPaymentError(code: Int, response: String?) {

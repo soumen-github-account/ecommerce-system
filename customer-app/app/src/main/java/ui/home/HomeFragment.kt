@@ -18,7 +18,6 @@ import com.ecommerce.citybasket.ui.home.HomeSectionAdapter
 import com.ecommerce.citybasket.ui.home.TopCategoryAdapter
 import com.ecommerce.citybasket.ui.search.SearchActivity
 import com.google.android.material.appbar.AppBarLayout
-import com.google.gson.Gson
 import data.model.HomeSection
 import data.model.category.Category
 import data.model.category.TopCategory
@@ -26,7 +25,7 @@ import data.remote.api.RetrofitClient
 import data.remote.request.WishlistRequest
 import kotlinx.coroutines.launch
 import ui.address.AddAddressActivity
-import ui.address.AddressManagementActivity // 🔥 Naya import add kiya
+import ui.address.AddressManagementActivity
 import utils.TokenManager
 import kotlin.math.abs
 
@@ -41,7 +40,7 @@ class HomeFragment : Fragment() {
     private lateinit var txtAddressTypeHeader: TextView
     private lateinit var txtShortAddress: TextView
 
-    // 🔥 Dynamic Flag: Isse pata chalega user ke paas address saved hai ya nahi
+    // Dynamic Flag: Isse pata chalega user ke paas address saved hai ya nahi
     private var hasSavedAddresses: Boolean = false
 
     override fun onCreateView(
@@ -155,10 +154,13 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        Log.d("HOME","onResume")
         fetchAndSetupUserAddress()
     }
 
     private fun loadHomeSections(categoryId: String) {
+        Log.d("HOME","loadHomeSections")
+
         lifecycleScope.launch {
             try {
                 val savedToken = tokenManager.getToken()
@@ -168,7 +170,17 @@ class HomeFragment : Fragment() {
                     try {
                         val wishlistResponse = RetrofitClient.userApi.getWishlist("Bearer $savedToken")
                         if (wishlistResponse.isSuccessful && wishlistResponse.body()?.success == true) {
-                            userWishlistIds = wishlistResponse.body()?.wishlist?.mapNotNull { it.product?.id }?.toSet() ?: emptySet()
+//                            userWishlistIds = wishlistResponse.body()?.wishlist?.items?.mapNotNull { it.product?.id }?.toSet() ?: emptySet()
+                            val body = wishlistResponse.body()
+
+                            Log.d("HOME", body.toString())
+                            userWishlistIds =
+                                wishlistResponse.body()
+                                    ?.wishlist
+                                    ?.map { it.variantId ?: "" }
+                                    ?.toSet()
+                                    ?: emptySet()
+                            Log.d("Wishlisted_ids", "$userWishlistIds")
                         }
                     } catch (e: Exception) {
                         Log.e("HOME_DEBUG", "Wishlist fetch failed, skipping sync")
@@ -181,7 +193,15 @@ class HomeFragment : Fragment() {
                     val products = response.products
 
                     products.forEach { product ->
-                        if (userWishlistIds.contains(product.id)) {
+                        Log.d(
+                            "PRODUCT_DEBUG",
+                            "id=${product.id} productId=${product.productId}"
+                        )
+                        Log.d(
+                            "PRODUCT_DEBUG",
+                            "Wishlist IDs = $userWishlistIds"
+                        )
+                        if (userWishlistIds.contains(product.variantId)) {
                             product.isWishlisted = true
                         }
                     }
@@ -194,40 +214,28 @@ class HomeFragment : Fragment() {
                         HomeSection("Best Deals", bestProducts)
                     )
 
-                    homeSectionAdapter = HomeSectionAdapter(homeSections) { productId ->
-                        addProductToWishlist(productId)
-                    }
+                    homeSectionAdapter =
+                        HomeSectionAdapter(homeSections) {
+                                productId,
+                                variantId,
+                                sellerId,
+                                isWishlisted,
+                                position ->
+
+                            toggleWishlist(
+                                productId,
+                                variantId,
+                                sellerId,
+                                isWishlisted,
+                                position
+                            )
+                        }
 
                     rvHomeSections.adapter = homeSectionAdapter
                 }
 
             } catch (e: Exception) {
                 Log.e("HOME_DEBUG", e.message ?: "Error")
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun addProductToWishlist(productId: String) {
-        val savedToken = tokenManager.getToken()
-        if (savedToken.isNullOrEmpty()) {
-            Toast.makeText(requireContext(), "Please Login to add items to Wishlist!", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        lifecycleScope.launch {
-            try {
-                val authHeader = "Bearer $savedToken"
-                val request = WishlistRequest(productId)
-                val response = RetrofitClient.userApi.addToWishlist(authHeader, request)
-
-                if (response.isSuccessful) {
-                    val wishlistRes = response.body()
-                    if (wishlistRes != null && wishlistRes.success) {
-                        Toast.makeText(requireContext(), wishlistRes.message ?: "Wishlist Updated!", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
@@ -280,4 +288,76 @@ class HomeFragment : Fragment() {
             else -> R.drawable.ic_fashion_tshirt
         }
     }
+
+    private fun toggleWishlist(
+        productId: String,
+        variantId: String,
+        sellerId: String,
+        isWishlisted: Boolean,
+        position: Int
+    ) {
+
+        val token = tokenManager.getToken()
+
+        if (token.isNullOrEmpty()) {
+
+            Toast.makeText(
+                requireContext(),
+                "Please Login First",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        lifecycleScope.launch {
+
+            try {
+
+                val response =
+                    if (isWishlisted) {
+
+                        RetrofitClient.userApi.addToWishlist(
+                            "Bearer $token",
+                            WishlistRequest(
+                                productId,
+                                variantId,
+                                sellerId
+                            )
+                        )
+
+                    } else {
+
+                        RetrofitClient.userApi.removeWishlist(
+                            "Bearer $token",
+                            WishlistRequest(
+                                productId,
+                                variantId,
+                                sellerId
+                            )
+                        )
+
+                    }
+
+                if (!response.isSuccessful) {
+
+                    Toast.makeText(
+                        requireContext(),
+                        "Wishlist update failed",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+            } catch (e: Exception) {
+
+                Toast.makeText(
+                    requireContext(),
+                    e.message,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+
 }

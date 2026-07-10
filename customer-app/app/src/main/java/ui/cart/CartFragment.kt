@@ -2,6 +2,7 @@ package ui.cart
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -89,6 +90,7 @@ class CartFragment : Fragment() {
             try {
                 val authHeader = "Bearer $savedToken"
                 val networkResponse = RetrofitClient.userApi.getCart(authHeader)
+                Log.d("cart resPonse", "$networkResponse")
 
                 if (networkResponse.isSuccessful) {
                     val cartResponse = networkResponse.body()

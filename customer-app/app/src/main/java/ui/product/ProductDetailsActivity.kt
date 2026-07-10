@@ -69,6 +69,7 @@ class ProductDetailsActivity : AppCompatActivity() {
     private lateinit var highlightHeader: RelativeLayout
 
     private var isHighlightExpanded = true
+    private lateinit var btnAddToCart: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,6 +81,8 @@ class ProductDetailsActivity : AppCompatActivity() {
         setupRecycler()
 
         productId = intent.getStringExtra("PRODUCT_ID")
+
+        Log.d("PRODUCT_DEBUG", "Received Product ID = $productId")
         if (!productId.isNullOrEmpty()) loadProduct(productId!!)
     }
 
@@ -146,6 +149,10 @@ class ProductDetailsActivity : AppCompatActivity() {
         }
 
         rvAllDetails = findViewById(R.id.rvAllDetails)
+        btnAddToCart = findViewById(R.id.btnAddToCart)
+        btnAddToCart.setOnClickListener {
+            addToCart()
+        }
     }
 
     private fun showSection(
@@ -425,11 +432,11 @@ class ProductDetailsActivity : AppCompatActivity() {
             )
 
             val txt = view.findViewById<TextView>(R.id.txtHighlight)
-            val img = view.findViewById<ImageView>(R.id.imgIcon)
+//            val img = view.findViewById<ImageView>(R.id.imgIcon)
 
             txt.text = highlight
 
-            img.setImageResource(getHighlightIcon(highlight))
+//            img.setImageResource(getHighlightIcon(highlight))
 
             layoutHighlights.addView(view)
         }
@@ -542,4 +549,76 @@ class ProductDetailsActivity : AppCompatActivity() {
         }
     }
 
+    private fun addToCart() {
+
+        val token = tokenManager.getToken()
+
+        if (token.isNullOrEmpty()) {
+
+            Toast.makeText(
+                this,
+                "Please Login First",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        val variantId = selectedVariant?.variantId
+
+        if (variantId == null) {
+
+            Toast.makeText(
+                this,
+                "Please select variant",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        lifecycleScope.launch {
+
+            try {
+
+                val response = RetrofitClient.userApi.addToCart(
+                    "Bearer $token",
+                    CartRequest(
+                        productId = product.productId!!,
+                        variant = variantId,
+                        quantity = currentQuantity
+                    )
+                )
+
+                if (response.success) {
+
+                    Toast.makeText(
+                        this@ProductDetailsActivity,
+                        response.message ?: "Added to Cart",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                } else {
+
+                    Toast.makeText(
+                        this@ProductDetailsActivity,
+                        response.message ?: "Failed to Add Cart",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                }
+
+            } catch (e: Exception) {
+
+                Toast.makeText(
+                    this@ProductDetailsActivity,
+                    e.message,
+                    Toast.LENGTH_SHORT
+                ).show()
+
+            }
+
+        }
+
+    }
 }

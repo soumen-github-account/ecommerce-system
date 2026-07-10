@@ -12,6 +12,7 @@ import com.ecommerce.citybasket.R
 import data.model.payment.PaymentSession
 import data.remote.response.CartItemResponse
 import data.remote.api.RetrofitClient
+import data.remote.request.CreateOrderRequest
 import kotlinx.coroutines.launch
 import utils.TokenManager
 
@@ -29,6 +30,7 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var tokenManager: TokenManager
     var selectedAddressForCheckout: data.model.address.AddressData? = null
     var totalCartAmount: Double = 0.0
+    var selectedPaymentMethod = "UPI"
 
     // 🔥 FIXED: Aapke core CartItemResponse model type ke sath configured list
     var checkoutCartItems: List<CartItemResponse> = emptyList()
@@ -154,38 +156,95 @@ class CheckoutActivity : AppCompatActivity() {
         }
         return super.onSupportNavigateUp()
     }
+//    fun createOrderAndContinue(onDone: (String) -> Unit) {
+//
+//        val token = tokenManager.getToken() ?: return
+//
+//        lifecycleScope.launch {
+//            try {
+//
+//                val response = RetrofitClient.userApi.createOrder(
+//                    "Bearer $token",
+//                    data.remote.request.CreateOrderRequest(
+//                        items = checkoutCartItems,
+//                        totalAmount = totalCartAmount
+//                    )
+//                )
+//
+//                if (response.isSuccessful && response.body() != null) {
+//
+//                    val orderId = response.body()!!.orderId
+//
+//                    this@CheckoutActivity.orderId = orderId
+//
+//                    Log.d("ORDER", "Created orderId = $orderId")
+//
+//                    onDone(orderId)
+//
+//                } else {
+//                    Log.e("ORDER", response.errorBody()?.string() ?: "error")
+//                }
+//
+//            } catch (e: Exception) {
+//                Log.e("ORDER", e.message.toString())
+//            }
+//        }
+//    }
+
+
     fun createOrderAndContinue(onDone: (String) -> Unit) {
 
         val token = tokenManager.getToken() ?: return
 
+        val address = selectedAddressForCheckout ?: return
+
         lifecycleScope.launch {
+
             try {
 
+                val request = CreateOrderRequest(
+
+                    items = checkoutCartItems,
+
+                    totalAmount = totalCartAmount,
+
+                    addressId = address.id,
+
+                    paymentMethod = selectedPaymentMethod
+
+                )
+
                 val response = RetrofitClient.userApi.createOrder(
+
                     "Bearer $token",
-                    data.remote.request.CreateOrderRequest(
-                        items = checkoutCartItems,
-                        totalAmount = totalCartAmount
-                    )
+
+                    request
+
                 )
 
                 if (response.isSuccessful && response.body() != null) {
 
-                    val orderId = response.body()!!.orderId
+                    val body = response.body()!!
 
-                    this@CheckoutActivity.orderId = orderId
+                    orderId = body.orderId
 
-                    Log.d("ORDER", "Created orderId = $orderId")
+                    Log.d("ORDER", body.orderId)
 
-                    onDone(orderId)
+                    onDone(body.orderId)
 
                 } else {
-                    Log.e("ORDER", response.errorBody()?.string() ?: "error")
+
+                    Log.e("ORDER", response.errorBody()?.string() ?: "")
+
                 }
 
             } catch (e: Exception) {
-                Log.e("ORDER", e.message.toString())
+
+                Log.e("ORDER", e.toString())
+
             }
+
         }
+
     }
 }

@@ -230,17 +230,19 @@ export const getAllProductByCategory = async (req, res) => {
           status: "active",
           isPublished: true,
         },
-        select:
-          "title slug brand category subCategory subCategoryLevel2 highlights",
+        select: "title slug brand seller category subCategory subCategoryLevel2 highlights"
       })
       .lean();
     //   console.log(JSON.stringify(variants, null, 2));
 
     const products = variants
-      .filter((item) => item.product) // category match hua wahi rahega
+      .filter((item) => item.product)
       .map((item) => ({
-        _id: item._id,
         productId: item.product._id,
+
+        // NEW
+        variantId: item._id,
+        sellerId: item.product.seller,
 
         title: item.product.title,
         slug: item.product.slug,
@@ -261,8 +263,6 @@ export const getAllProductByCategory = async (req, res) => {
         pricing: item.pricing,
         inventory: item.inventory,
       }));
-
-    //   console.log(products)
 
     return res.status(200).json({
       success: true,
@@ -429,7 +429,7 @@ export const getAllProductByCategory = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-
+    
     // Current selected variant
     const variant = await ProductVariant.findById(id)
       .populate({
@@ -441,7 +441,7 @@ export const getProductById = async (req, res) => {
         ],
       })
       .lean();
-
+    
     if (!variant || !variant.product) {
       return res.status(404).json({
         success: false,
@@ -497,7 +497,7 @@ export const getProductById = async (req, res) => {
 
       attributes: v.attributes,
 
-      image: v.images?.[0]?.url || "",
+      images: v.images,
 
       price: {
         mrp: v.pricing?.mrp || 0,
@@ -558,8 +558,6 @@ export const getProductById = async (req, res) => {
       // ⭐ All variants
       variants,
     };
-
-    console.log(JSON.stringify(data, null, 2));
 
     return res.status(200).json({
       success: true,

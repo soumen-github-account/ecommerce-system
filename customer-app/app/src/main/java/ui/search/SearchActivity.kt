@@ -66,38 +66,38 @@ class SearchActivity : AppCompatActivity() {
 //    }
 
     // FIXED: Search page se bhi wishlist add karne ka functionality jodha
-    private fun addProductToWishlist(productId: String) {
-        val savedToken = tokenManager.getToken()
-        if (savedToken.isNullOrEmpty()) {
-            Toast.makeText(this, "Please Login to add items to Wishlist!", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        lifecycleScope.launch {
-            try {
-                val authHeader = "Bearer $savedToken"
-                val request = WishlistRequest(productId)
-
-                val response = RetrofitClient.userApi.addToWishlist(authHeader, request)
-
-                if (response.isSuccessful) {
-                    val wishlistRes = response.body()
-                    if (wishlistRes != null && wishlistRes.success) {
-                        Toast.makeText(this@SearchActivity, wishlistRes.message ?: "Added to wishlist! ❤️", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this@SearchActivity, wishlistRes?.message ?: "Something went wrong!", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    if (response.code() == 400) {
-                        Toast.makeText(this@SearchActivity, "Product already in wishlist!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this@SearchActivity, "Error Code: ${response.code()}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(this@SearchActivity, "Network Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+//    private fun addProductToWishlist(productId: String) {
+//        val savedToken = tokenManager.getToken()
+//        if (savedToken.isNullOrEmpty()) {
+//            Toast.makeText(this, "Please Login to add items to Wishlist!", Toast.LENGTH_SHORT).show()
+//            return
+//        }
+//
+//        lifecycleScope.launch {
+//            try {
+//                val authHeader = "Bearer $savedToken"
+//                val request = WishlistRequest(productId)
+//
+//                val response = RetrofitClient.userApi.addToWishlist(authHeader, request)
+//
+//                if (response.isSuccessful) {
+//                    val wishlistRes = response.body()
+//                    if (wishlistRes != null && wishlistRes.success) {
+//                        Toast.makeText(this@SearchActivity, wishlistRes.message ?: "Added to wishlist! ❤️", Toast.LENGTH_SHORT).show()
+//                    } else {
+//                        Toast.makeText(this@SearchActivity, wishlistRes?.message ?: "Something went wrong!", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    if (response.code() == 400) {
+//                        Toast.makeText(this@SearchActivity, "Product already in wishlist!", Toast.LENGTH_SHORT).show()
+//                    } else {
+//                        Toast.makeText(this@SearchActivity, "Error Code: ${response.code()}", Toast.LENGTH_SHORT).show()
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//                Toast.makeText(this@SearchActivity, "Network Error: ${e.message}", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    }
 }

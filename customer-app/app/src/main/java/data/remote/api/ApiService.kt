@@ -14,6 +14,7 @@ import data.remote.response.CreatePaymentSessionResponse
 import data.remote.response.PaymentStatusResponse
 import data.remote.response.RazorpayConfigResponse
 import data.remote.response.UserResponse
+import data.remote.response.WishlistDeleteResponse
 import data.remote.response.WishlistResponse
 import retrofit2.Response
 import retrofit2.http.Body
@@ -59,6 +60,19 @@ interface ApiService {
 
     @GET("api/user/wishlist")
     suspend fun getWishlist(@Header("Authorization") token: String): Response<WishlistResponse>
+
+    @HTTP(
+        method = "DELETE",
+        path = "api/user/wishlist",
+        hasBody = true
+    )
+    suspend fun removeWishlist(
+        @Header("Authorization")
+        token: String,
+
+        @Body
+        body: WishlistRequest
+    ): Response<WishlistDeleteResponse>
 
     @POST("api/user/addresses")
     suspend fun createAddress(

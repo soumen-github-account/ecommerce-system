@@ -11,8 +11,17 @@ import admin from "./config/firebase.js"
 
 const PORT = process.env.PORT || 8000
 const app = express()
-app.use(express.json())
 app.use(cors())
+
+
+app.use(
+    "/api/payment/webhook",
+    express.raw({
+        type: "application/json"
+    })
+);
+
+app.use(express.json())
 connectDb()
 console.log("Firebase initialized successfully")
 

@@ -5,7 +5,7 @@ import { PaymentSession } from "../models/PaymentSession.js";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import {razorpay} from "../config/razorpay.js"
-
+import { Address } from "../models/AddressModel.js";
 
 export const getRazorpayConfig = async (req, res) => {
     try {
@@ -21,51 +21,386 @@ export const getRazorpayConfig = async (req, res) => {
     }
 };
 
+
+// export const createOrder = async (req, res) => {
+//     try {
+
+//         const {
+//             items,
+//             totalAmount,
+//             addressId,
+//             paymentMethod
+//         } = req.body;
+
+//         if (!items || items.length === 0) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Cart is empty."
+//             });
+//         }
+
+//         // Shipping Address
+//         let shippingAddress = {};
+
+//         if (addressId) {
+
+//             const address = await Address.findOne({
+//                 _id: addressId,
+//                 user: req.user._id
+//             });
+
+//             if (!address) {
+//                 return res.status(404).json({
+//                     success: false,
+//                     message: "Address not found."
+//                 });
+//             }
+
+//             shippingAddress = {
+//                 fullName: address.fullName,
+//                 phone: address.phone,
+//                 addressLine1: address.addressLine1,
+//                 addressLine2: address.addressLine2,
+//                 landmark: address.landmark,
+//                 city: address.city,
+//                 state: address.state,
+//                 country: address.country,
+//                 pincode: address.pincode
+//             };
+//         }
+
+//         // Unique Order Number
+//         const orderNumber =
+//             "CB" +
+//             Date.now() +
+//             Math.floor(Math.random() * 1000);
+
+//         const order = await Order.create({
+
+//             orderNumber,
+
+//             user: req.user._id,
+
+//             items: items.map(item => ({
+
+//                 product: item.product._id,
+
+//                 variant: item.variant._id,
+
+//                 sku: item.variant.sku,
+
+//                 quantity: item.quantity,
+
+//                 pricing: {
+//                     mrp: item.mrp,
+//                     sellingPrice: item.price,
+//                     total: item.price * item.quantity
+//                 },
+
+//                 snapshot: {
+//                     title: item.product.title,
+//                     variantName: item.variant.variantName,
+//                     image: item.image,
+//                     attributes: item.variant.attributes
+//                 }
+
+//             })),
+
+//             shippingAddress,
+
+//             pricing: {
+//                 subtotal: totalAmount,
+//                 discount: 0,
+//                 shippingCharge: 0,
+//                 tax: 0,
+//                 totalAmount
+//             },
+
+//             payment: {
+//                 method: paymentMethod || "UPI",
+//                 status: "PENDING"
+//             },
+
+//             status: "PLACED"
+
+//         });
+
+//         return res.status(201).json({
+
+//             success: true,
+//             orderId: order._id,
+//             orderNumber: order.orderNumber
+
+//         });
+
+//     } catch (e) {
+
+//         console.log(e);
+
+//         return res.status(500).json({
+//             success: false,
+//             message: e.message
+//         });
+
+//     }
+// };
+
 export const createOrder = async (req, res) => {
+
     try {
+
         const {
+
             items,
+
             totalAmount,
+
             addressId,
+
             paymentMethod
+
         } = req.body;
 
-        if (!items || !items.length) {
+        if (!items || items.length === 0) {
+
             return res.status(400).json({
+
                 success: false,
-                message: "Items required"
+
+                message: "Cart is empty."
+
             });
+
         }
 
+        const address = await Address.findOne({
+
+            _id: addressId,
+
+            user: req.user._id
+
+        });
+
+        if (!address) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Address not found"
+
+            });
+
+        }
+
+        const orderNumber =
+
+            "CB" +
+
+            Date.now() +
+
+            Math.floor(Math.random() * 1000);
+
         const order = await Order.create({
-            userId: req.user.id,
-            items,
-            totalAmount,
-            addressId,
-            paymentMethod,   
-            orderStatus: "INITIATED",
-            paymentStatus: "PENDING"
+
+            orderNumber,
+
+            user: req.user._id,
+
+            items: items.map(item => ({
+
+                product: item.product._id,
+
+                variant: item.variant._id,
+
+                sku: item.variant.sku,
+
+                quantity: item.quantity,
+
+                pricing: {
+
+                    mrp: item.mrp,
+
+                    sellingPrice: item.price,
+
+                    costPrice: item.costPrice || 0,
+
+                    discount: item.discount || 0,
+
+                    tax: item.tax || 0,
+
+                    total: item.price * item.quantity
+
+                },
+
+                snapshot: {
+
+                    title: item.product.title,
+
+                    variantName: item.variant.variantName,
+
+                    image: item.image,
+
+                    attributes: item.variant.attributes
+
+                }
+
+            })),
+
+            shippingAddress: {
+
+                fullName: address.fullName,
+
+                phone: address.phone,
+
+                addressLine1: address.addressLine1,
+
+                addressLine2: address.addressLine2,
+
+                landmark: address.landmark,
+
+                city: address.city,
+
+                state: address.state,
+
+                country: address.country,
+
+                pincode: address.pincode
+
+            },
+
+            pricing: {
+
+                subtotal: totalAmount,
+
+                discount: 0,
+
+                shippingCharge: 0,
+
+                tax: 0,
+
+                totalAmount
+
+            },
+
+            payment: {
+
+                method: paymentMethod,
+
+                status: "PENDING"
+
+            },
+
+            status: "PLACED"
+
         });
 
         return res.status(201).json({
+
             success: true,
-            orderId: order._id
+
+            orderId: order._id,
+
+            orderNumber: order.orderNumber
+
         });
 
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
     }
+
+    catch (error) {
+
+        console.log(error);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
 };
+
+// export const createPaymentSession = async (req, res) => {
+//     try {
+
+//         const userId = req.user.id;
+//         const { orderId, addressId, paymentMethod, upiAppPackage } = req.body;
+
+//         const order = await Order.findById(orderId);
+
+//         if (!order) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Order not found"
+//             });
+//         }
+
+//         // ✅ Total amount nikalo
+//         const amount = order.pricing.totalAmount;
+
+//         console.log("Amount =", amount);
+
+//         // ✅ Razorpay Order Create
+//         const razorpayOrder = await razorpay.orders.create({
+//             amount: Math.round(amount * 100), // paise
+//             currency: "INR",
+//             receipt: order.orderNumber
+//         });
+
+//         console.log("Razorpay Order =", razorpayOrder);
+
+//         // ✅ Payment Session
+//         const session = await PaymentSession.create({
+//             sessionId: uuidv4(),
+//             userId,
+//             orderId: order._id,
+//             amount,
+//             currency: "INR",
+//             paymentMethod,
+//             upiAppPackage,
+//             gatewayOrderId: razorpayOrder.id,
+//             status: "CREATED"
+//         });
+
+//         return res.status(201).json({
+//             success: true,
+
+//             paymentSessionId: session._id,
+//             orderId: order._id,
+
+//             paymentData: {
+//                 gatewayOrderId: razorpayOrder.id,
+//                 amount: razorpayOrder.amount,
+//                 currency: razorpayOrder.currency
+//             },
+
+//             merchantUpiId: process.env.UPI_ID || null
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+
+//         return res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+
 
 export const createPaymentSession = async (req, res) => {
     try {
 
-        const userId = req.user.id;
+        const userId = req.user._id;
 
-        const { orderId, addressId, paymentMethod, upiAppPackage } = req.body;
+        const {
+            orderId,
+            paymentMethod,
+            upiAppPackage
+        } = req.body;
 
         const order = await Order.findById(orderId);
 
@@ -76,142 +411,278 @@ export const createPaymentSession = async (req, res) => {
             });
         }
 
-        // 🔥 1. Create Razorpay Order FIRST
-        const razorpayOrder = await razorpay.orders.create({
-            amount: order.totalAmount * 100,
-            currency: "INR",
-            receipt: order._id.toString()
-        });
-
-        if (!razorpayOrder) {
-            return res.status(500).json({
+        // Order ownership check
+        if (order.user.toString() !== userId.toString()) {
+            return res.status(403).json({
                 success: false,
-                message: "Failed to create Razorpay order"
+                message: "Unauthorized order"
             });
         }
 
-        // 🔥 2. Create Payment Session
-        const session = await PaymentSession.create({
-            sessionId: uuidv4(),
-            userId,
-            orderId: order._id,
-            amount: order.totalAmount,
-            currency: "INR",
-            paymentMethod,
-            upiAppPackage,
-            gatewayOrderId: razorpayOrder.id, 
-            status: "CREATED"
-        });
+        // Already paid?
+        if (order.payment.status === "SUCCESS") {
+            return res.status(400).json({
+                success: false,
+                message: "Order already paid."
+            });
+        }
 
-        order.paymentSessionId = session._id;
+        // Update selected payment method
+        order.payment.method = paymentMethod;
         await order.save();
 
+        const amount = order.pricing.totalAmount;
+
+        // ===========================
+        // COD
+        // ===========================
+
+        if (paymentMethod === "COD") {
+
+            const session = await PaymentSession.create({
+
+                sessionId: uuidv4(),
+
+                userId,
+
+                orderId: order._id,
+
+                amount,
+
+                currency: "INR",
+
+                paymentMethod: "COD",
+
+                status: "CREATED"
+
+            });
+
+            return res.status(200).json({
+
+                success: true,
+
+                paymentSessionId: session.sessionId,
+
+                orderId: order._id,
+
+                paymentData: null,
+
+                merchantUpiId: null
+
+            });
+
+        }
+
+        // ===========================
+        // ONLINE PAYMENT
+        // ===========================
+
+        const razorpayOrder = await razorpay.orders.create({
+
+            amount: Math.round(amount * 100),
+
+            currency: "INR",
+
+            receipt: order.orderNumber,
+
+            notes: {
+
+                orderId: order._id.toString(),
+
+                userId: userId.toString()
+
+            }
+
+        });
+
+        const session = await PaymentSession.create({
+
+            sessionId: uuidv4(),
+
+            userId,
+
+            orderId: order._id,
+
+            amount,
+
+            currency: "INR",
+
+            paymentMethod,
+
+            upiAppPackage,
+
+            gatewayOrderId: razorpayOrder.id,
+
+            status: "CREATED"
+
+        });
+
         return res.status(201).json({
+
             success: true,
 
-            paymentSessionId: session._id,
+            paymentSessionId: session.sessionId,
+
             orderId: order._id,
 
             paymentData: {
+
                 gatewayOrderId: razorpayOrder.id,
-                amount: order.totalAmount * 100,
-                currency: "INR"
+
+                amount: razorpayOrder.amount,
+
+                currency: razorpayOrder.currency
+
             },
 
             merchantUpiId: process.env.UPI_ID || null
+
         });
 
-    } catch (error) {
-        console.error(error);
+    }
+
+    catch (error) {
+
+        console.log(error);
 
         return res.status(500).json({
+
             success: false,
+
             message: error.message
+
         });
+
     }
 };
 
-export const cashfreeWebhook = async (req, res) => {
-    try {
-        const signature = req.headers["x-webhook-signature"];
-        const timestamp = req.headers["x-webhook-timestamp"];
-        const rawBody = JSON.stringify(req.body);
+// export const getPaymentStatus = async (req, res) => {
+//     try {
+//         // const { orderId } = req.params;
+//         // const order = await Order.findById(orderId);
+        
+//         // if (!order) return res.status(404).json({ success: false });
+        
+//         const { sessionId } = req.params;
+//         let session = await PaymentSession.findOne({ sessionId });
 
-        // Verify Signature (Use your Cashfree Secret Key)
-        const bodyToVerify = timestamp + rawBody;
-        const expectedSignature = crypto
-            .createHmac("sha256", process.env.CASHFREE_SECRET_KEY)
-            .update(bodyToVerify)
-            .digest("base64");
+//         // Agar session PENDING hai, toh Razorpay API se confirm karo
+//         if (session.status === "PENDING") {
+//             const razorpayOrder = await razorpay.orders.fetch(session.gatewayOrderId);
+//             // Razorpay logic: check razorpayOrder.status
+//             if (razorpayOrder.status === 'paid') {
+//                 session.status = "SUCCESS";
+//                 await session.save();
+//                 // Trigger stock deduction logic here (ensure it runs only once!)
+//             }
+//         }
 
-        if (signature !== expectedSignature) {
-            return res.status(401).send("Invalid Signature");
-        }
-
-        // Proceed with your logic
-        const event = req.body;
-        if (event.type === "PAYMENT_SUCCESS_WEBHOOK") {
-            const cfOrderId = event.data.order.order_id;
-
-        const paymentSession =
-            await PaymentSession.findOne({
-                cashfreeOrderId: cfOrderId
-            });
-
-        if (!paymentSession) {
-            return res.status(404).send("Session not found");
-        }
-
-        await PaymentSession.findByIdAndUpdate(
-            paymentSession._id,
-            {
-                status: "SUCCESS"
-            }
-        );
-
-        await Order.findByIdAndUpdate(
-            paymentSession.orderId,
-            {
-                paymentStatus: "SUCCESS",
-                orderStatus: "CONFIRMED"
-            }
-        );
-                    
-        }
-        res.status(200).send("OK");
-    } catch (error) {
-        res.status(500).send();
-    }
-};
-
+//         res.json({
+//             success: true,
+//             orderStatus: order.orderStatus, // "CONFIRMED" or "PENDING_PAYMENT"
+//             paymentStatus: order.paymentStatus
+//         });
+//     } catch (error) {
+//         res.status(500).json({ success: false, message: error.message });
+//     }
+// };
 
 export const getPaymentStatus = async (req, res) => {
     try {
-        // const { orderId } = req.params;
-        // const order = await Order.findById(orderId);
-        
-        // if (!order) return res.status(404).json({ success: false });
-        
-        const { sessionId } = req.params;
-        let session = await PaymentSession.findOne({ sessionId });
 
-        // Agar session PENDING hai, toh Razorpay API se confirm karo
-        if (session.status === "PENDING") {
-            const razorpayOrder = await razorpay.orders.fetch(session.gatewayOrderId);
-            // Razorpay logic: check razorpayOrder.status
-            if (razorpayOrder.status === 'paid') {
-                session.status = "SUCCESS";
-                await session.save();
-                // Trigger stock deduction logic here (ensure it runs only once!)
-            }
+        const { sessionId } = req.params;
+
+        const paymentSession = await PaymentSession.findOne({
+            sessionId
+        });
+
+        if (!paymentSession) {
+            return res.status(404).json({
+                success: false,
+                message: "Payment session not found"
+            });
         }
 
-        res.json({
+        const order = await Order.findById(
+            paymentSession.orderId
+        );
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            });
+        }
+
+        // ---------------------------------
+        // Optional Safety Check
+        // Agar webhook delay ho to Razorpay se verify kar lo
+        // ---------------------------------
+
+        if (
+            paymentSession.gatewayOrderId &&
+            paymentSession.status !== "SUCCESS"
+        ) {
+
+            try {
+
+                const razorpayOrder =
+                    await razorpay.orders.fetch(
+                        paymentSession.gatewayOrderId
+                    );
+
+                if (razorpayOrder.status === "paid") {
+
+                    paymentSession.status = "SUCCESS";
+                    paymentSession.paidAt = new Date();
+
+                    await paymentSession.save();
+
+                    order.payment.status = "SUCCESS";
+                    order.status = "CONFIRMED";
+
+                    await order.save();
+
+                }
+
+            } catch (e) {
+                console.log("Razorpay Verify Error", e.message);
+            }
+
+        }
+
+        return res.json({
+
             success: true,
-            orderStatus: order.orderStatus, // "CONFIRMED" or "PENDING_PAYMENT"
-            paymentStatus: order.paymentStatus
+
+            orderId: order._id,
+
+            orderNumber: order.orderNumber,
+
+            orderStatus: order.status,
+
+            paymentStatus: order.payment.status,
+
+            paymentMethod: order.payment.method,
+
+            paymentSessionStatus: paymentSession.status
+
         });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+
+    }
+
+    catch (error) {
+
+        console.log(error);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
     }
 };
+

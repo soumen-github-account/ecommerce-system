@@ -4,6 +4,8 @@ import { Order } from "../models/OrderModel.js";
 import { Product } from "../models/ProductModel.js";
 import { Cart } from "../models/CartModel.js";
 import { Wishlist } from "../models/WishlistModel.js"
+import { Seller } from "../models/SellerModel.js";
+import { ProductVariant } from "../models/ProductVariant.js";
 
 
 export const getUser = async(req, res) => {
@@ -24,168 +26,356 @@ export const getUser = async(req, res) => {
 }
 
 export const createWishList = async (req, res) => {
-    try {
-        const { productId } = req.body;
-        const userId = req.user.id; 
 
-        // 1. Validation: Check kiya ki productId bheja bhi hai ya nahi
-        if (!productId) {
+    try {
+
+        const userId = req.user.id;
+        const { productId, variantId, sellerId } = req.body;
+
+        if (!productId || !variantId || !sellerId) {
             return res.status(400).json({
                 success: false,
-                message: "Product ID is required",
+                message: "Missing required fields."
             });
         }
 
-        // 2. Duplicate Check
-        const alreadyExist = await Wishlist.findOne({
-            user: userId,
-            product: productId,
+        let wishlist = await Wishlist.findOne({
+            user: userId
         });
 
-        // 🔥 3. TOGGLE MECHANISM (AGAR PEHLE SE HAI TOH REMOVE KARDO)
-        if (alreadyExist) {
-            await Wishlist.findOneAndDelete({
+        if (!wishlist) {
+            wishlist = await Wishlist.create({
                 user: userId,
-                product: productId,
+                items: []
             });
+        }
+
+        const alreadyExists = wishlist.items.find(
+            item => item.variant.toString() === variantId
+        );
+
+        if (alreadyExists) {
 
             return res.status(200).json({
                 success: true,
-                isWishlisted: false, // Android ko batane ke liye ki ab remove ho gaya hai
-                message: "Removed from wishlist successfully",
+                message: "Already in wishlist."
             });
+
         }
 
-        // 4. AGAR NAHI HAI TOH CREATE KARDO
-        let wishlist = await Wishlist.create({
-            user: userId,
+        wishlist.items.push({
             product: productId,
+            variant: variantId,
+            seller: sellerId
         });
 
-        // 5. Android UI ke liye data populate kiya
-        wishlist = await wishlist.populate({
-            path: "product",
-            populate: [
-                { path: "category", select: "name" },
-                { path: "subCategory", select: "name" },
-                { path: "subCategoryLevel2", select: "name" }
-            ]
-        });
+        await wishlist.save();
 
-        // 6. Perfect Response for Addition
         return res.status(201).json({
+
             success: true,
-            isWishlisted: true, // Android ko batane ke liye ki ab add ho gaya hai
-            message: "Added to wishlist successfully",
-            wishlist,
+            message: "Added to wishlist."
+
         });
 
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
-    }
-};
 
-// export const getWishlistProduct = async (req, res) => {
+        return res.status(500).json({
+            success:false,
+            message:error.message
+        });
+
+    }
+
+}
+
+// export const createWishList = async (req, res) => {
+
 //     try {
+
 //         const userId = req.user.id;
 
-//         // FIXED: Pure nested components ko populate kiya taaki Android crash na ho
-//         const wishlist = await Wishlist.find({
-//             user: userId,
-//         }).populate({
-//             path: "product",
-//             populate: [
-//                 {
-//                     path: "category",
-//                     select: "name",
-//                 },
-//                 {
-//                     path: "subCategory",
-//                     select: "name",
-//                 },
-//                 {
-//                     path: "subCategoryLevel2", // 🔥 FIXED: Yeh missing tha! Iske bina crash ho jata
-//                     select: "name",
-//                 },
-//             ],
+//         const { productId, variantId, sellerId } = req.body;
+//         console.log(productId, variantId, sellerId)
+
+//         if (!productId || !variantId || !sellerId) {
+
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Missing required fields."
+//             });
+
+//         }
+
+//         let wishlist = await Wishlist.findOne({
+//             user: userId
 //         });
 
-//         res.status(200).json({
+//         if (!wishlist) {
+
+//             wishlist = await Wishlist.create({
+
+//                 user: userId,
+
+//                 items: []
+
+//             });
+
+//         }
+
+//         const alreadyExists = wishlist.items.find(item =>
+//           item.variant.toString() === variantId
+//         );
+
+//         if (alreadyExists) {
+//           return res.status(400).json({
+//               success:false,
+//               message:"Product already exists in wishlist."
+//           });
+//         }
+        
+
+//         wishlist.items.push({
+
+//             product: productId,
+
+//             variant: variantId,
+
+//             seller: sellerId
+
+//         });
+//         console.log(JSON.stringify(wishlist, null, 2));
+
+//         await wishlist.save();
+
+//         return res.status(201).json({
+
 //             success: true,
-//             count: wishlist.length,
-//             wishlist,
-//         });
-//     } catch (error) {
-//         res.status(500).json({
-//             success: false,
-//             message: error.message,
-//         });
-//     }
-// };
 
-export const getWishlistProduct = async (req, res) => {
+//             message: "Wishlist updated successfully.",
+
+//             wishlist
+
+//         });
+
+//     }
+
+//     catch (error) {
+//       console.log(error);
+//       console.log(error.message);
+//       console.log(error.errors);
+
+//       return res.status(500).json({
+//           success: false,
+//           message: error.message
+//       });
+//     }
+
+// }
+
+export const removeWishlist = async (req,res)=>{
+
+    try{
+
+        const userId=req.user.id;
+        const {variantId}=req.body;
+
+        const wishlist=await Wishlist.findOne({
+            user:userId
+        });
+
+        if(!wishlist){
+
+            return res.status(404).json({
+                success:false,
+                message:"Wishlist not found."
+            });
+
+        }
+
+        wishlist.items=wishlist.items.filter(item=>
+            item.variant.toString()!==variantId
+        );
+
+        await wishlist.save();
+
+        return res.json({
+
+            success:true,
+            message:"Removed from wishlist."
+
+        });
+
+    }
+
+    catch(error){
+
+        return res.status(500).json({
+
+            success:false,
+            message:error.message
+
+        });
+
+    }
+
+}
+
+export const getWishlist = async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log("called")
 
-    const wishlist = await Wishlist.find({
-      user: userId,
-    }).populate({
-      path: "product", // ProductVariant
-      populate: [
-        {
-          path: "product", // Main Product
-          populate: [
-            {
-              path: "category",
-              select: "name",
-            },
-            {
-              path: "subCategory",
-              select: "name",
-            },
-            {
-              path: "subCategoryLevel2",
-              select: "name",
-            },
-            {
-              path: "brand",
-              select: "name logo",
-            },
-            {
-              path: "seller",
-              select: "storeName",
-            },
-          ],
+    const wishlist = await Wishlist.findOne({ user: userId })
+      .populate({
+        path: "items.product",
+        populate: [
+          { path: "category" },
+          { path: "subCategory" },
+          { path: "subCategoryLevel2" },
+        ],
+      })
+      .populate("items.variant")
+      .populate("items.seller")
+      .lean();
+
+    if (!wishlist || wishlist.items.length === 0) {
+      return res.status(200).json({
+        success: true,
+        totalItems: 0,
+        wishlist: [],
+      });
+    }
+
+    const wishlistProducts = wishlist.items
+      .filter(
+        (item) =>
+          item.product &&
+          item.variant &&
+          item.seller
+      )
+      .map((item) => ({
+        _id: item.variant._id,                 // Variant ID
+        productId: item.product._id,           // Product ID
+        variantId: item.variant._id,
+        sellerId: item.seller._id,
+
+        title: item.product.title,
+        slug: item.product.slug,
+        brand: item.product.brand,
+
+        category: item.product.category?.name || "",
+        subCategory: item.product.subCategory?.name || "",
+        subCategoryLevel2:
+          item.product.subCategoryLevel2?.name || "",
+
+        variantName: item.variant.variantName,
+
+        attributes: item.variant.attributes || [],
+
+        image:
+          item.variant.images?.length > 0
+            ? item.variant.images[0].url
+            : "",
+
+        pricing: {
+          mrp: item.variant.pricing?.mrp || 0,
+          sellingPrice:
+            item.variant.pricing?.sellingPrice || 0,
+          costPrice:
+            item.variant.pricing?.costPrice || 0,
+          tax: item.variant.pricing?.tax || 0,
+          discount:
+            item.variant.pricing?.discount || 0,
         },
-      ],
-    });
 
-    res.status(200).json({
+        inventory: {
+          stock: item.variant.inventory?.stock || 0,
+        },
+
+        highlights: item.product.highlights || [],
+
+        isWishlisted: true,
+      }));
+
+      console.log(wishlistProducts)
+
+    return res.status(200).json({
       success: true,
-      count: wishlist.length,
-      wishlist,
+      totalItems: wishlistProducts.length,
+      wishlist: wishlistProducts,
     });
-
   } catch (error) {
-    res.status(500).json({
+    console.log(error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
 
+// export const getWishlistProduct = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+
+//     const wishlist = await Wishlist.find({
+//       user: userId,
+//     }).populate({
+//       path: "product", // ProductVariant
+//       populate: [
+//         {
+//           path: "product", // Main Product
+//           populate: [
+//             {
+//               path: "category",
+//               select: "name",
+//             },
+//             {
+//               path: "subCategory",
+//               select: "name",
+//             },
+//             {
+//               path: "subCategoryLevel2",
+//               select: "name",
+//             },
+//             {
+//               path: "brand",
+//               select: "name logo",
+//             },
+//             {
+//               path: "seller",
+//               select: "storeName",
+//             },
+//           ],
+//         },
+//       ],
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       count: wishlist.length,
+//       wishlist,
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 export const addToCart = async (req, res) => {
   try {
-    const { productId, quantity, varient } = req.body;
+    const { productId, quantity, variant } = req.body;
     const userId = req.user.id;
 
+    console.log(productId, quantity, variant)
+    
     const existingCart = await Cart.findOne({
       user: userId,
-      product: productId,
-      varient: varient
+      variant: variant
     });
 
     if (existingCart) {
@@ -203,7 +393,7 @@ export const addToCart = async (req, res) => {
       user: userId,
       product: productId,
       quantity: quantity || 1,
-      varient
+      variant
     });
 
     res.status(201).json({
@@ -223,26 +413,6 @@ export const getCartItems = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // 1. User ke saare cart items nikalna aur product data populate karna
-    // const cartItems = await Cart.find({
-    //   user: userId,
-    // }).populate({
-    //   path: "product",
-    //   populate: [
-    //     {
-    //       path: "category",
-    //       select: "name",
-    //     },
-    //     {
-    //       path: "subCategory",
-    //       select: "name",
-    //     },
-    //     {
-    //       path: "subCategoryLevel2", // FIXED: Jo pehle crash ho raha tha, ab fully populated hai
-    //       select: "name",
-    //     },
-    //   ],
-    // });
     const cartItems = await Cart.find({
       user: userId,
     })
@@ -285,13 +455,20 @@ export const getCartItems = async (req, res) => {
     const grandTotal = subTotal + shippingCharges;
 
     // 5. Clean & Structured Response bhejenge jo Android directly parse kar sake
-    cartItems.map(item => ({
+  
+
+    const formattedCart = cartItems.map(item => ({
 
       _id: item._id,
 
       quantity: item.quantity,
 
-      product: item.product,
+      product: {
+          ...item.product.toObject(),
+          category: item.product.category?.name,
+          subCategory: item.product.subCategory?.name,
+          subCategoryLevel2: item.product.subCategoryLevel2?.name,
+      },
 
       variant: item.variant,
 
@@ -299,10 +476,14 @@ export const getCartItems = async (req, res) => {
 
       mrp: item.variant?.pricing?.mrp,
 
-      image: item.variant?.images?.find(i => i.isPrimary)?.url
-          || item.variant?.images?.[0]?.url
+      image:
+        item.variant?.images?.find(i => i.isPrimary)?.url
+        || item.variant?.images?.[0]?.url
 
-    }))
+    }));
+    console.log(
+      JSON.stringify(formattedCart, null, 2)
+    );
     res.json({
       success: true,
       count: cartItems.length,
@@ -324,19 +505,18 @@ export const getCartItems = async (req, res) => {
 export const removeFromCart = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId } = req.body; // Jo product remove karna hai uski ID
+    const { productId } = req.body; // productId = Cart _id
 
     if (!productId) {
       return res.status(400).json({
         success: false,
-        message: "Product ID is required",
+        message: "Cart ID is required",
       });
     }
 
-    // Database se user ka cart item dhoond kar delete karna
     const deletedItem = await Cart.findOneAndDelete({
+      _id: productId,
       user: userId,
-      product: productId,
     });
 
     if (!deletedItem) {
@@ -346,47 +526,59 @@ export const removeFromCart = async (req, res) => {
       });
     }
 
-    // Item delete hone ke baad, bache hue cart items ka naya total calculate karenge
-    // FIXED: Delete karne ke baad bache hue items ko bhi full populate karna padega
-    const remainingItems = await Cart.find({ user: userId }).populate({
-      path: "product",
-      populate: [
-        {
-          path: "category",
-          select: "name",
-        },
-        {
-          path: "subCategory",
-          select: "name",
-        },
-        {
-          path: "subCategoryLevel2", // Yeh line missing thi, isliye crash ho raha tha!
-          select: "name",
-        },
-      ],
-    });
+    const remainingItems = await Cart.find({ user: userId })
+      .populate({
+        path: "product",
+        populate: [
+          { path: "category", select: "name" },
+          { path: "subCategory", select: "name" },
+          { path: "subCategoryLevel2", select: "name" },
+        ],
+      })
+      .populate("variant");
+
     const subTotal = remainingItems.reduce((sum, item) => {
-      const price = item.product?.price?.[0] || 0;
+      const price = item.variant?.pricing?.sellingPrice || 0;
       return sum + price * item.quantity;
     }, 0);
 
-    // Naya shipping rules apply karenge
-    let shippingCharges = 0;
-    if (remainingItems.length > 0) {
-      shippingCharges = subTotal > 500 ? 0 : 50;
-    }
+    const shippingCharges =
+      remainingItems.length > 0
+        ? (subTotal > 500 ? 0 : 0)
+        : 0;
 
     const grandTotal = subTotal + shippingCharges;
 
-    // Response me updated price aur items bhejenge taaki Android UI refresh ho sake
+    const formattedCart = remainingItems.map(item => ({
+      _id: item._id,
+      quantity: item.quantity,
+
+      product: {
+        ...item.product.toObject(),
+        category: item.product.category?.name,
+        subCategory: item.product.subCategory?.name,
+        subCategoryLevel2: item.product.subCategoryLevel2?.name,
+      },
+
+      variant: item.variant,
+
+      price: item.variant?.pricing?.sellingPrice || 0,
+      mrp: item.variant?.pricing?.mrp || 0,
+
+      image:
+        item.variant?.images?.find(img => img.isPrimary)?.url ||
+        item.variant?.images?.[0]?.url ||
+        "",
+    }));
+
     res.json({
       success: true,
-      message: "Item removed from cart successfully",
-      count: remainingItems.length,
-      subTotal: subTotal,
-      shippingCharges: shippingCharges,
-      grandTotal: grandTotal,
-      cartItems: remainingItems,
+      message: "Item removed successfully",
+      count: formattedCart.length,
+      subTotal,
+      shippingCharges,
+      grandTotal,
+      cartItems: formattedCart,
     });
 
   } catch (error) {
@@ -397,77 +589,135 @@ export const removeFromCart = async (req, res) => {
   }
 };
 
+
 export const updateCartQuantity = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId, action } = req.body;
+    const { productId, action } = req.body; // productId = Cart _id
 
     if (!productId || !action) {
-      return res.status(400).json({ success: false, message: "Product ID and Action are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Cart ID and action are required",
+      });
     }
 
-    const cartItem = await Cart.findOne({ user: userId, product: productId });
+    const cartItem = await Cart.findOne({
+      _id: productId,
+      user: userId,
+    });
+
     if (!cartItem) {
-      return res.status(404).json({ success: false, message: "Item not found in cart" });
+      return res.status(404).json({
+        success: false,
+        message: "Item not found in cart",
+      });
     }
 
     if (action === "increment") {
-      const product = await Product.findById(productId);
-      if (product && cartItem.quantity >= product.stock) {
-        return res.status(400).json({ success: false, message: "Out of stock! More items cannot be added." });
+
+      const variant = await ProductVariant.findById(cartItem.variant);
+
+      if (
+        variant &&
+        cartItem.quantity >= variant.inventory.stock
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Out of stock",
+        });
       }
+
       cartItem.quantity += 1;
-      await cartItem.save(); // Sirf increment me save karenge
+      await cartItem.save();
+
     } else if (action === "decrement") {
+
       cartItem.quantity -= 1;
-      
+
       if (cartItem.quantity <= 0) {
-        // Agar 0 ho gaya toh direct delete
-        await Cart.findOneAndDelete({ user: userId, product: productId });
+
+        await Cart.findByIdAndDelete(cartItem._id);
+
       } else {
-        // Agar 0 nahi hua toh updated quantity save karenge
+
         await cartItem.save();
+
       }
+
     } else {
-      return res.status(400).json({ success: false, message: "Invalid action" });
+
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action",
+      });
+
     }
 
-    // 🔥 COMMON CODE: Jo dono cases ke liye bache hue items fetch aur calculate karega
-    const remainingItems = await Cart.find({ user: userId }).populate({
-      path: "product",
-      populate: [
-        { path: "category", select: "name" },
-        { path: "subCategory", select: "name" },
-        { path: "subCategoryLevel2", select: "name" }
-      ]
-    });
+    const remainingItems = await Cart.find({
+      user: userId,
+    })
+      .populate({
+        path: "product",
+        populate: [
+          { path: "category", select: "name" },
+          { path: "subCategory", select: "name" },
+          { path: "subCategoryLevel2", select: "name" },
+        ],
+      })
+      .populate("variant");
 
     const subTotal = remainingItems.reduce((sum, item) => {
-      const price = item.product?.price?.[0] || 0;
+      const price = item.variant?.pricing?.sellingPrice || 0;
       return sum + price * item.quantity;
     }, 0);
 
-    let shippingCharges = 0;
-    if (remainingItems.length > 0) {
-      shippingCharges = subTotal > 500 ? 0 : 50;
-    }
+    const shippingCharges =
+      remainingItems.length > 0
+        ? (subTotal > 500 ? 0 : 0)
+        : 0;
 
     const grandTotal = subTotal + shippingCharges;
 
-    // Single standardized response
+    const formattedCart = remainingItems.map(item => ({
+      _id: item._id,
+      quantity: item.quantity,
+
+      product: {
+        ...item.product.toObject(),
+        category: item.product.category?.name,
+        subCategory: item.product.subCategory?.name,
+        subCategoryLevel2: item.product.subCategoryLevel2?.name,
+      },
+
+      variant: item.variant,
+
+      price: item.variant?.pricing?.sellingPrice || 0,
+      mrp: item.variant?.pricing?.mrp || 0,
+
+      image:
+        item.variant?.images?.find(img => img.isPrimary)?.url ||
+        item.variant?.images?.[0]?.url ||
+        "",
+    }));
+
     res.json({
       success: true,
       message: "Cart updated successfully",
-      count: remainingItems.length,
-      subTotal: subTotal,
-      shippingCharges: shippingCharges,
-      grandTotal: grandTotal,
-      cartItems: remainingItems
+      count: formattedCart.length,
+      subTotal,
+      shippingCharges,
+      grandTotal,
+      cartItems: formattedCart,
     });
 
   } catch (error) {
-    console.error("Backend Error Stack:", error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

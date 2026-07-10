@@ -1,7 +1,7 @@
 
 import express from "express"
 import { protect } from "../middlewares/authMiddleware.js";
-import { addToCart, checkout, createAddress, createWishList, deleteAddress, getCartItems, getMyOrders, getOrderById, getUser, getUserAddresses, getWishlistProduct, removeFromCart, setDefaultAddress, updateAddress, updateCartQuantity } from "../controllers/userController.js";
+import { addToCart, checkout, createAddress, createWishList, deleteAddress, getCartItems, getMyOrders, getOrderById, getUser, getUserAddresses, getWishlist, removeFromCart, removeWishlist, setDefaultAddress, updateAddress, updateCartQuantity } from "../controllers/userController.js";
 
 const router = express.Router();
 
@@ -10,7 +10,8 @@ router.get("/me", protect, getUser);
 
 // Wishlist
 router.post("/wishlist", protect, createWishList);
-router.get("/wishlist", protect, getWishlistProduct);
+router.delete("/wishlist", protect, removeWishlist);
+router.get("/wishlist", protect, getWishlist);
 
 // Cart
 router.post("/cart", protect, addToCart);

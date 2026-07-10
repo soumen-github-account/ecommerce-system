@@ -1,6 +1,7 @@
 package ui.wishlist
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,85 +30,174 @@ class WishlistFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
         val view = inflater.inflate(R.layout.fragment_wishlist, container, false)
 
         tokenManager = TokenManager(requireContext())
+
         rvWishlist = view.findViewById(R.id.rvWishlist)
         txtWishlistCount = view.findViewById(R.id.txtWishlistCount)
 
         rvWishlist.layoutManager = GridLayoutManager(requireContext(), 2)
+
         loadWishlistData()
 
         return view
     }
 
     private fun loadWishlistData() {
-        val savedToken = tokenManager.getToken()
-        if (savedToken.isNullOrEmpty()) {
-            Toast.makeText(requireContext(), "Please Login to see wishlist items!", Toast.LENGTH_SHORT).show()
+
+        val token = tokenManager.getToken()
+
+        if (token.isNullOrEmpty()) {
+
             txtWishlistCount.text = "(0)"
+
+            Toast.makeText(
+                requireContext(),
+                "Please Login First",
+                Toast.LENGTH_SHORT
+            ).show()
+
             return
         }
 
         lifecycleScope.launch {
+
             try {
-                val authHeader = "Bearer $savedToken"
-                val response = RetrofitClient.userApi.getWishlist(authHeader)
 
-                if (response.isSuccessful) {
-                    val wishlistResponse = response.body()
+                val response =
+                    RetrofitClient.userApi.getWishlist("Bearer $token")
+                Log.d("WISHLIST_API", "Code = ${response.code()}")
+                Log.d("WISHLIST_API", "Message = ${response.message()}")
+                Log.d("WISHLIST_API", "URL = ${response.raw().request().url()}")
 
-                    if (wishlistResponse != null && wishlistResponse.success) {
-                        val productList = mutableListOf<Product>()
-                        wishlistResponse.wishlist?.forEach { item ->
-                            item.product?.let {
-                                // 🔥 Wishlist screen ke sabhi products ko true mark karenge
-                                it.isWishlisted = true
-                                productList.add(it)
-                            }
-                        }
-
-                        txtWishlistCount.text = "(${productList.size})"
-
-                        if (productList.isEmpty()) {
-                            Toast.makeText(requireContext(), "Your Wishlist is empty!", Toast.LENGTH_SHORT).show()
-                        }
-
-                        rvWishlist.adapter = HomeProductAdapter(productList) { productId ->
-                            // Wishlist page se toggle karne par direct remove operation chalega
-                            toggleWishlistProduct(productId)
-                        }
-
-                    } else {
-                        val msg = wishlistResponse?.message ?: "Failed to get wishlist data"
-                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(requireContext(), "Server Error Code: ${response.code()}", Toast.LENGTH_SHORT).show()
+                if (!response.isSuccessful) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Server Error : ${response.code()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
                 }
+
+                val body = response.body()
+
+                if (body == null || !body.success) {
+
+                    Toast.makeText(
+                        requireContext(),
+                        "Something went wrong",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    return@launch
+                }
+
+                val productList = body.wishlist.toMutableList()
+
+                productList.forEach {
+                    it.isWishlisted = true
+                }
+
+                txtWishlistCount.text = "(${productList.size})"
+
+                if (productList.isEmpty()) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Your Wishlist is Empty",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                txtWishlistCount.text = "(${productList.size})"
+
+                if (productList.isEmpty()) {
+
+                    Toast.makeText(
+                        requireContext(),
+                        "Your Wishlist is Empty",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                rvWishlist.adapter =
+                    HomeProductAdapter(productList) {
+                            productId,
+                            variantId,
+                            sellerId,
+                            isWishlisted,
+                            position ->
+
+                        toggleWishlistProduct(
+                            productId,
+                            variantId,
+                            sellerId
+                        )
+                    }
+
             } catch (e: Exception) {
+
                 e.printStackTrace()
-                Toast.makeText(requireContext(), "Data Error: ${e.message}", Toast.LENGTH_SHORT).show()
+
+                Toast.makeText(
+                    requireContext(),
+                    e.message,
+                    Toast.LENGTH_SHORT
+                ).show()
             }
+
         }
+
     }
 
-    private fun toggleWishlistProduct(productId: String) {
-        val savedToken = tokenManager.getToken() ?: return
+    private fun toggleWishlistProduct(
+        productId: String,
+        variantId: String,
+        sellerId: String
+    ) {
+
+        val token = tokenManager.getToken() ?: return
 
         lifecycleScope.launch {
+
             try {
-                val authHeader = "Bearer $savedToken"
-                val request = WishlistRequest(productId)
-                val response = RetrofitClient.userApi.addToWishlist(authHeader, request)
+
+                val request = WishlistRequest(
+                    productId = productId,
+                    variantId = variantId,
+                    sellerId = sellerId
+                )
+
+                val response = RetrofitClient.userApi.addToWishlist(
+                    "Bearer $token",
+                    request
+                )
 
                 if (response.isSuccessful) {
-                    // Smoothly refresh full data inside wishlist screen to remove unselected item
+
                     loadWishlistData()
+
+                } else {
+
+                    Toast.makeText(
+                        requireContext(),
+                        "Failed",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
+
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+
+                Toast.makeText(
+                    requireContext(),
+                    e.message,
+                    Toast.LENGTH_SHORT
+                ).show()
             }
+
         }
+
     }
+
 }
