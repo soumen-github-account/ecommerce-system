@@ -32,7 +32,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import viewmodel.SharedUserViewModel
 
-class PaymentFragment : Fragment(), com.razorpay.PaymentResultListener {
+class PaymentFragment : Fragment() {
     private lateinit var sharedUserViewModel: SharedUserViewModel
     private lateinit var layoutUpiHeader: LinearLayout
     private lateinit var layoutCard: LinearLayout
@@ -363,66 +363,6 @@ class PaymentFragment : Fragment(), com.razorpay.PaymentResultListener {
         }
     }
 
-//    private fun openRazorpayCheckout() {
-//        lifecycleScope.launch {
-//            val key = getRazorpayKey()
-//            if (key.isNullOrEmpty()) return@launch
-//
-//            val checkout = Checkout()
-//            checkout.setKeyID(key)
-//
-//            val session = (activity as CheckoutActivity).currentPaymentSession ?: return@launch
-//
-//            // Aapke custom UI se select kiya hua package
-//            val selectedPackage = selectedUpiApp?.packageName ?: ""
-//
-//            try {
-//                val options = JSONObject()
-//                options.put("name", "City Basket")
-//                options.put("order_id", session.gatewayOrderId)
-//                options.put("amount", session.amount)
-//                options.put("method", "upi")
-//
-//                // 1. Config: Baki options hide karne ke liye
-//                val config = JSONObject()
-//                val hide = JSONObject()
-//                hide.put("method", "card,netbanking,wallet,emi,paylater")
-//                config.put("hide", hide)
-//                options.put("config", config)
-//
-//                val external = JSONObject()
-//                val apps = JSONArray()
-//
-//                when {
-//                    selectedPackage.contains("com.google.android.apps.nbu.paisa.user") -> apps.put("gpay")
-//                    selectedPackage.contains("com.phonepe.app") -> apps.put("phonepe")
-//                    selectedPackage.contains("net.one97.paytm") -> apps.put("paytm")
-//                    selectedPackage.contains("com.my_money.android") -> apps.put("navi")
-//                    selectedPackage.contains("com.pnb.mobilebanking") -> apps.put("pnb")
-//                    selectedPackage.contains("com.freecharge.android") -> apps.put("freecharge")
-//                    selectedPackage.contains("com.amazon.mShop.android.shopping") -> apps.put("amazonpay")
-//                    selectedPackage.contains("in.org.npci.upiapp") -> apps.put("bhim")
-//                    else -> apps.put(selectedPackage)
-//                }
-//
-//                Log.d("UPI_DEBUG", "Selected Package = $selectedPackage")
-//                Log.d("UPI_DEBUG", "Apps Array = ${apps}")
-//
-//
-//                // Agar apps array mein kuch add hua, tabhi external set karein
-//                if (apps.length() > 0) {
-//                    external.put("upi", apps)
-//                    options.put("external", external)
-//                }
-//
-//                checkout.open(requireActivity(), options)
-//
-//            } catch (e: Exception) {
-//                Log.e("RAZORPAY", e.message.toString())
-//            }
-//        }
-//    }
-
     private fun openRazorpayCheckout() {
 
         lifecycleScope.launch {
@@ -507,17 +447,6 @@ class PaymentFragment : Fragment(), com.razorpay.PaymentResultListener {
         }
     }
 
-    override fun onPaymentSuccess(razorpayPaymentId: String?) {
-
-        Toast.makeText(
-            requireContext(),
-            "Payment Successful",
-            Toast.LENGTH_SHORT
-        ).show()
-
-        startPollingPaymentStatus()
-    }
-
     private fun startPollingPaymentStatus() {
 
         val checkoutActivity = activity as? CheckoutActivity ?: return
@@ -586,9 +515,29 @@ class PaymentFragment : Fragment(), com.razorpay.PaymentResultListener {
         }
     }
 
-    override fun onPaymentError(code: Int, response: String?) {
+    fun handlePaymentSuccess(paymentId: String?) {
+
+        Toast.makeText(
+            requireContext(),
+            "Payment Success",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        startPollingPaymentStatus()
+    }
+
+    fun handlePaymentError(
+        code: Int,
+        response: String?
+    ) {
+
         isPaymentInProgress = false
-        Toast.makeText(requireContext(), "Payment Failed", Toast.LENGTH_SHORT).show()
+
+        Toast.makeText(
+            requireContext(),
+            "Payment Failed",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     override fun onDestroyView() {

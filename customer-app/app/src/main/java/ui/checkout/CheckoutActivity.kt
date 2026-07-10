@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.ecommerce.citybasket.R
+import com.razorpay.PaymentResultListener
 import data.model.payment.PaymentSession
 import data.remote.response.CartItemResponse
 import data.remote.api.RetrofitClient
@@ -16,7 +17,7 @@ import data.remote.request.CreateOrderRequest
 import kotlinx.coroutines.launch
 import utils.TokenManager
 
-class CheckoutActivity : AppCompatActivity() {
+class CheckoutActivity : AppCompatActivity(), PaymentResultListener {
 
     private lateinit var tvStepTitle: TextView
     private lateinit var step1: TextView
@@ -156,41 +157,6 @@ class CheckoutActivity : AppCompatActivity() {
         }
         return super.onSupportNavigateUp()
     }
-//    fun createOrderAndContinue(onDone: (String) -> Unit) {
-//
-//        val token = tokenManager.getToken() ?: return
-//
-//        lifecycleScope.launch {
-//            try {
-//
-//                val response = RetrofitClient.userApi.createOrder(
-//                    "Bearer $token",
-//                    data.remote.request.CreateOrderRequest(
-//                        items = checkoutCartItems,
-//                        totalAmount = totalCartAmount
-//                    )
-//                )
-//
-//                if (response.isSuccessful && response.body() != null) {
-//
-//                    val orderId = response.body()!!.orderId
-//
-//                    this@CheckoutActivity.orderId = orderId
-//
-//                    Log.d("ORDER", "Created orderId = $orderId")
-//
-//                    onDone(orderId)
-//
-//                } else {
-//                    Log.e("ORDER", response.errorBody()?.string() ?: "error")
-//                }
-//
-//            } catch (e: Exception) {
-//                Log.e("ORDER", e.message.toString())
-//            }
-//        }
-//    }
-
 
     fun createOrderAndContinue(onDone: (String) -> Unit) {
 
@@ -246,5 +212,25 @@ class CheckoutActivity : AppCompatActivity() {
 
         }
 
+    }
+
+    override fun onPaymentSuccess(razorpayPaymentId: String?) {
+
+        val fragment =
+            supportFragmentManager.findFragmentById(R.id.checkoutContainer)
+
+        if (fragment is PaymentFragment) {
+            fragment.handlePaymentSuccess(razorpayPaymentId)
+        }
+    }
+
+    override fun onPaymentError(code: Int, response: String?) {
+
+        val fragment =
+            supportFragmentManager.findFragmentById(R.id.checkoutContainer)
+
+        if (fragment is PaymentFragment) {
+            fragment.handlePaymentError(code, response)
+        }
     }
 }

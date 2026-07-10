@@ -428,7 +428,7 @@ export const createPaymentSession = async (req, res) => {
         }
 
         // Update selected payment method
-        order.payment.method = paymentMethod;
+        order.payment.method = paymentMethod.toUpperCase();
         await order.save();
 
         const amount = order.pricing.totalAmount;
@@ -641,6 +641,21 @@ export const getPaymentStatus = async (req, res) => {
                     paymentSession.status = "SUCCESS";
                     paymentSession.paidAt = new Date();
 
+                    // Payment id bhi fetch kar lo
+                    const payments = await razorpay.orders.fetchPayments(
+                        paymentSession.gatewayOrderId
+                    );
+
+                    if (payments.items.length > 0) {
+
+                        const payment = payments.items[0];
+
+                        paymentSession.gatewayPaymentId = payment.id;
+
+                        order.payment.transactionId = payment.id;
+                        order.payment.paymentProvider = "RAZORPAY";
+                    }
+
                     await paymentSession.save();
 
                     order.payment.status = "SUCCESS";
@@ -648,6 +663,10 @@ export const getPaymentStatus = async (req, res) => {
 
                     await order.save();
 
+                    // Cart clear
+                    await Cart.deleteMany({
+                        user: order.user
+                    });
                 }
 
             } catch (e) {
