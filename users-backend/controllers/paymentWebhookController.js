@@ -466,6 +466,8 @@ export const razorpayWebhook = async (req, res) => {
                         paymentSession._id
 
                 }).session(mongoSession);
+                console.log("PaymentSession =", paymentSession?._id);
+                console.log("PaymentTransaction =", paymentTransaction);
 
             if (!paymentTransaction) {
 

@@ -16,7 +16,12 @@ const paymentTransactionSchema = new mongoose.Schema(
       index: true,
     },
 
-    paymentSessionId: String,
+    paymentSession: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PaymentSession",
+      required: true,
+      index: true
+    },
 
     gateway: {
       type: String,
