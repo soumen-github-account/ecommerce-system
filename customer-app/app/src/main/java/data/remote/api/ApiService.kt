@@ -28,7 +28,7 @@ import retrofit2.http.Path
 
 interface ApiService {
 
-    @GET("api/user/getUser")
+    @GET("api/user/me")
     suspend fun getUser(
         @Header("Authorization")
         token: String

@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.ecommerce.citybasket.R
 import com.razorpay.PaymentResultListener
@@ -16,8 +17,10 @@ import data.remote.api.RetrofitClient
 import data.remote.request.CreateOrderRequest
 import kotlinx.coroutines.launch
 import utils.TokenManager
+import viewmodel.SharedUserViewModel
 
 class CheckoutActivity : AppCompatActivity(), PaymentResultListener {
+    lateinit var sharedUserViewModel: SharedUserViewModel
 
     private lateinit var tvStepTitle: TextView
     private lateinit var step1: TextView
@@ -39,9 +42,12 @@ class CheckoutActivity : AppCompatActivity(), PaymentResultListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_checkout)
 
         tokenManager = TokenManager(this)
+        sharedUserViewModel = ViewModelProvider(this)[SharedUserViewModel::class.java]
+        loadCurrentUser()
+        setContentView(R.layout.activity_checkout)
+
 
         tvStepTitle = findViewById(R.id.tvStepTitle)
         step1 = findViewById(R.id.step1)
@@ -68,6 +74,37 @@ class CheckoutActivity : AppCompatActivity(), PaymentResultListener {
                 is AddressFragment -> updateStepperUI(1, "Address Confirmation")
                 is OrderSummaryFragment -> updateStepperUI(2, "Order Summary")
                 is PaymentFragment -> updateStepperUI(3, "Payment Options")
+            }
+        }
+    }
+
+    private fun loadCurrentUser() {
+
+        val token = tokenManager.getToken() ?: return
+
+        lifecycleScope.launch {
+
+            try {
+                Log.d("USER_API", "Calling API")
+
+                val response =
+                    RetrofitClient.userApi.getUser("Bearer $token")
+                Log.d("USER_API", "Code = ${response.code()}")
+
+                if (response.isSuccessful && response.body() != null) {
+
+                    val user = response.body()!!.user
+                    Log.d("USER_API", "Email=${user.email}")
+                    Log.d("USER_API", "Phone=${user.phone}")
+
+                    sharedUserViewModel.setUser(
+                        user.email,
+                        user.phone
+                    )
+                }
+
+            } catch (e: Exception) {
+                Log.e("USER_LOAD", e.message ?: "Unknown Error")
             }
         }
     }

@@ -395,6 +395,8 @@ class PaymentFragment : Fragment() {
                 val options = JSONObject()
                 val email = sharedUserViewModel.userEmail.value ?: ""
                 val phone = sharedUserViewModel.userPhone.value ?: ""
+                Log.d("USER_DATA", "Email = $email")
+                Log.d("USER_DATA", "Phone = $phone")
 
                 options.put("name", "City Basket")
                 options.put("description", "Order Payment")
