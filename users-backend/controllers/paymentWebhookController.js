@@ -836,11 +836,15 @@ export const razorpayWebhook = async (req, res) => {
             transaction.refund.processedAt =
                 new Date();
 
-            // transaction.timeline.push({
-            //     status: "REFUND_PROCESSED",
-            //     message: "Refund completed",
-            //     createdAt: new Date()
-            // });
+            if (!transaction.timeline) {
+                transaction.timeline = [];
+            }
+
+            transaction.timeline.push({
+                status: "REFUND_PROCESSED",
+                message: "Refund completed",
+                createdAt: new Date()
+            });
 
             await transaction.save();
 
@@ -883,12 +887,16 @@ export const razorpayWebhook = async (req, res) => {
                 refund.notes?.reason ||
                 "Refund Failed";
 
-            // transaction.timeline.push({
-            //     status: "REFUND_FAILED",
-            //     message:
-            //         transaction.refund.failureReason,
-            //     createdAt: new Date()
-            // });
+            if (!transaction.timeline) {
+                transaction.timeline = [];
+            }
+
+            transaction.timeline.push({
+                status: "REFUND_FAILED",
+                message:
+                    transaction.refund.failureReason,
+                createdAt: new Date()
+            });
 
             await transaction.save();
 
