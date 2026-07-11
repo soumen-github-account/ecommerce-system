@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import {razorpay} from "../config/razorpay.js"
 import { Address } from "../models/AddressModel.js";
+import { PaymentTransaction } from "../models/PaymentTransaction.js";
 
 export const getRazorpayConfig = async (req, res) => {
     try {
@@ -199,10 +200,208 @@ export const createOrder = async (req, res) => {
 
 };
 
+// export const createPaymentSession = async (req, res) => {
+//     try {
+
+//         const userId = req.user._id;
+
+//         const {
+//             orderId,
+//             paymentMethod,
+//             upiAppPackage
+//         } = req.body;
+
+//         const order = await Order.findById(orderId);
+
+//         if (!order) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Order not found"
+//             });
+//         }
+
+//         // Order ownership check
+//         if (order.user.toString() !== userId.toString()) {
+//             return res.status(403).json({
+//                 success: false,
+//                 message: "Unauthorized order"
+//             });
+//         }
+
+//         // Already paid?
+//         if (order.payment.status === "SUCCESS") {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Order already paid."
+//             });
+//         }
+
+//         // Update selected payment method
+//         order.payment.method = paymentMethod.toUpperCase();
+//         await order.save();
+
+//         const amount = order.pricing.totalAmount;
+
+//         // ===========================
+//         // COD
+//         // ===========================
+
+//         if (paymentMethod === "COD") {
+
+//             const session = await PaymentSession.create({
+
+//                 sessionId: uuidv4(),
+
+//                 userId,
+
+//                 orderId: order._id,
+
+//                 amount,
+
+//                 currency: "INR",
+
+//                 paymentMethod: "COD",
+
+//                 status: "CREATED"
+
+//             });
+
+//             return res.status(200).json({
+
+//                 success: true,
+
+//                 paymentSessionId: session.sessionId,
+
+//                 orderId: order._id,
+
+//                 paymentData: null,
+
+//                 merchantUpiId: null
+
+//             });
+
+//         }
+
+//         // ===========================
+//         // ONLINE PAYMENT
+//         // ===========================
+
+//         await PaymentSession.deleteMany({
+//             orderId: order._id,
+//             status: "CREATED"
+//         });
+
+//         const razorpayOrder = await razorpay.orders.create({
+
+//             amount: Math.round(amount * 100),
+
+//             currency: "INR",
+
+//             receipt: order.orderNumber,
+
+//             notes: {
+
+//                 orderId: order._id.toString(),
+
+//                 userId: userId.toString()
+
+//             }
+
+//         });
+
+//         const session = await PaymentSession.create({
+
+//             sessionId: uuidv4(),
+
+//             userId,
+
+//             orderId: order._id,
+
+//             amount,
+
+//             currency: "INR",
+
+//             paymentMethod,
+
+//             upiAppPackage,
+
+//             gatewayOrderId: razorpayOrder.id,
+
+//             status: "CREATED"
+
+//         });
+
+//         await PaymentTransaction.create({
+
+//             user: userId,
+
+//             order: order._id,
+
+//             paymentSession: session._id,
+
+//             gateway: "RAZORPAY",
+
+//             gatewayOrderId: razorpayOrder.id,
+
+//             gatewayPaymentId: null,
+
+//             amount: amount,
+
+//             currency: "INR",
+
+//             paymentMethod,
+
+//             status: "CREATED"
+
+//         });
+
+//         return res.status(201).json({
+
+//             success: true,
+
+//             paymentSessionId: session.sessionId,
+
+//             orderId: order._id,
+
+//             paymentData: {
+
+//                 gatewayOrderId: razorpayOrder.id,
+
+//                 amount: razorpayOrder.amount,
+
+//                 currency: razorpayOrder.currency
+
+//             },
+
+//             merchantUpiId: process.env.UPI_ID || null
+
+//         });
+
+//     }
+
+//     catch (error) {
+
+//         console.log(error);
+
+//         return res.status(500).json({
+
+//             success: false,
+
+//             message: error.message
+
+//         });
+
+//     }
+// };
+
 export const createPaymentSession = async (req, res) => {
+    const mongoSession = await mongoose.startSession();
+
     try {
 
         const userId = req.user._id;
+        
+        await mongoSession.startTransaction();
 
         const {
             orderId,
@@ -210,50 +409,127 @@ export const createPaymentSession = async (req, res) => {
             upiAppPackage
         } = req.body;
 
-        const order = await Order.findById(orderId);
+        //------------------------------------
+        // Validate
+        //------------------------------------
+
+        if (!orderId) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "Order Id is required"
+
+            });
+
+        }
+
+        if (!paymentMethod) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "Payment Method is required"
+
+            });
+
+        }
+
+        //------------------------------------
+        // Order
+        //------------------------------------
+
+        const order = await Order.findById(orderId).session(mongoSession);
 
         if (!order) {
+
             return res.status(404).json({
+
                 success: false,
+
                 message: "Order not found"
+
             });
+
         }
 
-        // Order ownership check
+        //------------------------------------
+        // Ownership
+        //------------------------------------
+
         if (order.user.toString() !== userId.toString()) {
+
             return res.status(403).json({
+
                 success: false,
+
                 message: "Unauthorized order"
+
             });
+
         }
 
-        // Already paid?
+        //------------------------------------
+        // Already Paid
+        //------------------------------------
+
         if (order.payment.status === "SUCCESS") {
+
             return res.status(400).json({
+
                 success: false,
-                message: "Order already paid."
+
+                message: "Order already paid"
+
             });
+
         }
 
-        // Update selected payment method
-        order.payment.method = paymentMethod.toUpperCase();
-        await order.save();
+        //------------------------------------
+        // Save Payment Method
+        //------------------------------------
 
-        const amount = order.pricing.totalAmount;
+        order.payment.method =
 
-        // ===========================
+            paymentMethod.toUpperCase();
+
+        await order.save({session: mongoSession});
+
+        const amount =
+
+            order.pricing.totalAmount;
+
+        //------------------------------------
         // COD
-        // ===========================
+        //------------------------------------
 
         if (paymentMethod === "COD") {
 
-            const session = await PaymentSession.create({
+            const [paymentSession] = await PaymentSession.create(
+                [{
+                    sessionId: uuidv4(),
+                    userId,
+                    orderId: order._id,
+                    amount,
+                    currency: "INR",
+                    paymentMethod: "COD",
+                    provider: "COD",
+                    status: "CREATED"
+                }],
+                { session: mongoSession }
+            );
 
-                sessionId: uuidv4(),
+            await PaymentTransaction.create([{
 
-                userId,
+                user: userId,
 
-                orderId: order._id,
+                order: order._id,
+
+                paymentSession: paymentSession._id,
+
+                gateway: "COD",
 
                 amount,
 
@@ -261,15 +537,29 @@ export const createPaymentSession = async (req, res) => {
 
                 paymentMethod: "COD",
 
-                status: "CREATED"
+                status: "PENDING",
 
-            });
+                timeline: [
+
+                    {
+
+                        status: "PENDING",
+
+                        message:
+                            "Cash on Delivery selected"
+
+                    }
+
+                ]
+
+            }], {session: mongoSession});
+            await mongoSession.commitTransaction();
 
             return res.status(200).json({
 
                 success: true,
 
-                paymentSessionId: session.sessionId,
+                paymentSessionId: paymentSession.sessionId,
 
                 orderId: order._id,
 
@@ -281,40 +571,120 @@ export const createPaymentSession = async (req, res) => {
 
         }
 
-        // ===========================
+        //------------------------------------
         // ONLINE PAYMENT
-        // ===========================
+        //------------------------------------
 
-        const razorpayOrder = await razorpay.orders.create({
+        // NEXT PART
+                //------------------------------------
+        // Remove Old Created Sessions
+        //------------------------------------
 
-            amount: Math.round(amount * 100),
+        // await PaymentSession.deleteMany({
 
-            currency: "INR",
+        //     orderId: order._id,
 
-            receipt: order.orderNumber,
+        //     status: "CREATED"
 
-            notes: {
+        // }, {session: mongoSession});
 
-                orderId: order._id.toString(),
+        // await PaymentTransaction.deleteMany({
 
-                userId: userId.toString()
+        //     order: order._id,
 
-            }
+        //     status: "CREATED"
 
-        });
-        
-        await PaymentSession.deleteMany({
-            orderId: order._id,
-            status: "CREATED"
-        });
+        // }, {session: mongoSession});
 
-        const session = await PaymentSession.create({
+        //------------------------------------
+        // Create Razorpay Order
+        //------------------------------------
 
-            sessionId: uuidv4(),
+        //------------------------------------
+        // Get Last Payment Session
+        //------------------------------------
 
-            userId,
+        const lastSession =
+        await PaymentSession
+        .findOne({
+            orderId: order._id
+        })
+        .sort({createdAt:-1})
+        .session(mongoSession);
 
-            orderId: order._id,
+        let retryCount = 0;
+
+        if(lastSession){
+
+            retryCount =
+                (lastSession.retryCount || 0) + 1;
+
+        }
+
+        const razorpayOrder =
+            await razorpay.orders.create({
+
+                amount: Math.round(amount * 100),
+
+                currency: "INR",
+
+                receipt: order.orderNumber,
+
+                notes: {
+
+                    orderId:
+                        order._id.toString(),
+
+                    orderNumber:
+                        order.orderNumber,
+
+                    userId:
+                        userId.toString()
+
+                }
+
+            });
+
+        //------------------------------------
+        // Create Payment Session
+        //------------------------------------
+
+        const [paymentSession] = await PaymentSession.create(
+            [{
+                sessionId: uuidv4(),
+                userId,
+                orderId: order._id,
+                amount,
+                currency: "INR",
+                paymentMethod,
+                provider: "RAZORPAY",
+                upiAppPackage,
+                gatewayOrderId: razorpayOrder.id,
+                status: "CREATED",
+                retryCount,
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000)
+            }],
+            { session: mongoSession }
+        );
+
+        //------------------------------------
+        // Create Payment Transaction
+        //------------------------------------
+
+        await PaymentTransaction.create([{
+
+            user: userId,
+
+            order: order._id,
+
+            paymentSession: paymentSession._id,
+
+            gateway: "RAZORPAY",
+
+            gatewayOrderId:
+                razorpayOrder.id,
+
+            gatewayPaymentId: null,
 
             amount,
 
@@ -322,51 +692,83 @@ export const createPaymentSession = async (req, res) => {
 
             paymentMethod,
 
-            upiAppPackage,
+            status: "CREATED",
 
-            gatewayOrderId: razorpayOrder.id,
+            timeline: [
 
-            status: "CREATED"
+                {
 
-        });
+                    status: "CREATED",
+
+                    message:
+                        "Payment session created"
+
+                }
+
+            ]
+
+        }], {session: mongoSession});
+
+        //------------------------------------
+        // NEXT PART
+        //------------------------------------
+                //------------------------------------
+        // Response
+        //------------------------------------
+
+        await mongoSession.commitTransaction();
 
         return res.status(201).json({
 
             success: true,
 
-            paymentSessionId: session.sessionId,
+            paymentSessionId: paymentSession.sessionId,
 
-            orderId: order._id,
+            orderId:
+                order._id,
 
             paymentData: {
 
-                gatewayOrderId: razorpayOrder.id,
+                gatewayOrderId:
+                    razorpayOrder.id,
 
-                amount: razorpayOrder.amount,
+                amount:
+                    razorpayOrder.amount,
 
-                currency: razorpayOrder.currency
+                currency:
+                    razorpayOrder.currency
 
             },
 
-            merchantUpiId: process.env.UPI_ID || null
+            merchantUpiId:
+                process.env.UPI_ID || null
 
         });
 
     }
 
     catch (error) {
+        await mongoSession.abortTransaction();
 
-        console.log(error);
+        console.error(
+            "CREATE PAYMENT SESSION ERROR"
+        );
+
+        console.error(error);
 
         return res.status(500).json({
 
             success: false,
 
-            message: error.message
+            message:
+                error.message
 
         });
 
+    } finally{
+        mongoSession.endSession();
     }
+
 };
 
 export const getPaymentStatus = async (req, res) => {

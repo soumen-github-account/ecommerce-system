@@ -1,17 +1,380 @@
+// import crypto from "crypto";
+// import mongoose from "mongoose";
+
+// import { Order } from "../models/OrderModel.js";
+// import { PaymentSession } from "../models/PaymentSession.js";
+// import { Cart } from "../models/CartModel.js";
+// import { Product } from "../models/ProductModel.js";
+
+// export const razorpayWebhook = async (req, res) => {
+// console.log("Webhook Hit");
+
+//     const signature=req.headers["x-razorpay-signature"];
+
+//     const expected=crypto
+//         .createHmac(
+//             "sha256",
+//             process.env.RAZORPAY_WEBHOOK_SECRET
+//         )
+//         .update(req.body)
+//         .digest("hex");
+
+//     console.log("Signature =",signature);
+//     console.log("Expected =",expected);
+
+//     if(signature!==expected){
+
+//         return res.status(400).json({
+//             success:false,
+//             message:"Invalid Signature"
+//         });
+
+//     }
+
+//     const payload=JSON.parse(req.body.toString());
+
+//     console.log(payload);
+
+//     const event=payload.event;
+
+//     console.log(event);
+//     //----------------------------------------
+//     // PAYMENT SUCCESS
+//     //----------------------------------------
+
+//     if (event === "payment.captured") {
+
+//         const payment = payload.payload.payment.entity;
+//         const gatewayOrderId = payment.order_id;
+//         const gatewayPaymentId = payment.id;
+
+//         console.log(gatewayOrderId);
+//         console.log(gatewayPaymentId);
+
+//         const mongoSession = await mongoose.startSession();
+
+//         try {
+
+//             await mongoSession.startTransaction();
+
+//             const paymentSession =
+//                 await PaymentSession.findOne({
+//                     gatewayOrderId
+//                 }).session(mongoSession);
+//             const paymentTransaction =
+//             await PaymentTransaction.findOne({
+//                 paymentSession: paymentSession._id
+//             }).session(mongoSession);
+
+//             if (!paymentTransaction) {
+
+//                 throw new Error(
+//                     "Payment Transaction not found"
+//                 );
+
+//             }
+
+//             if (!paymentSession) {
+
+//                 await mongoSession.abortTransaction();
+
+//                 return res.status(404).json({
+//                     success:false,
+//                     message:"Payment session not found"
+//                 });
+
+//             }
+
+//             if (paymentSession.status === "SUCCESS") {
+
+//                 await mongoSession.abortTransaction();
+
+//                 return res.status(200).json({
+//                     success:true,
+//                     message:"Already processed"
+//                 });
+
+//             }
+
+//             //------------------------------------
+//             // Payment Session
+//             //------------------------------------
+//             paymentSession.gatewayPaymentId = payment.id;
+
+//             paymentSession.gatewayResponse = {
+
+//                 entity: payment.entity,
+
+//                 amount: payment.amount,
+
+//                 currency: payment.currency,
+
+//                 status: payment.status,
+
+//                 method: payment.method,
+
+//                 bank: payment.bank,
+
+//                 wallet: payment.wallet,
+
+//                 vpa: payment.vpa,
+
+//                 email: payment.email,
+
+//                 contact: payment.contact,
+
+//                 fee: payment.fee,
+
+//                 tax: payment.tax,
+
+//                 rrn: payment.acquirer_data?.rrn,
+
+//                 utr: payment.acquirer_data?.upi_transaction_id,
+
+//                 acquirerData: payment.acquirer_data,
+
+//                 notes: payment.notes,
+
+//                 createdAt: payment.created_at
+
+//             };
+
+//             paymentSession.paidAt = new Date();
+
+//             paymentSession.status = "SUCCESS";
+
+//             await paymentSession.save({
+//                 session:mongoSession
+//             });
+
+//             paymentTransaction.status = "SUCCESS";
+
+//             paymentTransaction.gatewayPaymentId =
+//             gatewayPaymentId;
+
+//             paymentTransaction.paidAt =
+//             new Date();
+
+//             paymentTransaction.gatewayResponse = payment;
+
+//             await paymentTransaction.save({
+//                 session: mongoSession
+//             });
+
+//             console.log("Payment Session =", paymentSession);
+
+//             //------------------------------------
+//             // Order
+//             //------------------------------------
+
+//             const order = await Order.findById(
+//                 paymentSession.orderId
+//             ).session(mongoSession);
+
+//             console.log("Order =", order);
+
+//             if (!order) {
+
+//                 throw new Error("Order not found");
+
+//             }
+
+//             order.payment.status = "SUCCESS";
+//             order.payment.transactionId = gatewayPaymentId;
+//             order.payment.paymentProvider = "RAZORPAY";
+
+//             order.status = "CONFIRMED";
+
+//             await order.save({
+//                 session:mongoSession
+//             });
+
+//             //------------------------------------
+//             // Stock Reduce
+//             //------------------------------------
+
+//             for (const item of order.items) {
+
+//                 const product =
+//                     await Product.findById(item.product)
+//                         .session(mongoSession);
+
+//                 if (!product)
+//                     continue;
+
+//                 // Agar variants me stock hai to baad me variant update karenge
+//             }
+
+//             //------------------------------------
+//             // Clear Cart
+//             //------------------------------------
+
+//             await Cart.deleteMany({
+//                 user: order.user
+//             }).session(mongoSession);
+
+//             await mongoSession.commitTransaction();
+
+//             console.log("Payment Success");
+
+//             return res.status(200).json({
+//                 success:true
+//             });
+
+//         }
+
+//         catch(err){
+//             console.error("WEBHOOK ERROR");
+//             console.error(err);
+//             console.error(err.stack);
+//             await mongoSession.abortTransaction();
+//             return res.status(500).json({
+//                 success:false,
+//                 message:err.message
+//             });
+//         }
+
+//         finally{
+
+//             mongoSession.endSession();
+
+//         }
+
+//     }
+
+//     //----------------------------------------
+//     // PAYMENT FAILED
+//     //----------------------------------------
+
+//     if(event==="payment.failed"){
+
+//         const payment = payload.payload.payment.entity;
+
+//         const paymentSession=
+//             await PaymentSession.findOne({
+//                 gatewayOrderId:payment.order_id
+//             });
+
+//         if(paymentSession){
+
+//             paymentSession.status = "FAILED";
+
+//             paymentSession.gatewayResponse = {
+
+//                 entity: payment.entity,
+
+//                 amount: payment.amount,
+
+//                 currency: payment.currency,
+
+//                 status: payment.status,
+
+//                 method: payment.method,
+
+//                 email: payment.email,
+
+//                 contact: payment.contact,
+
+//                 errorCode: payment.error_code,
+
+//                 errorDescription: payment.error_description,
+
+//                 errorSource: payment.error_source,
+
+//                 errorReason: payment.error_reason,
+
+//                 errorStep: payment.error_step
+
+//             };
+
+//             await paymentSession.save();
+
+//             const order=await Order.findById(
+//                 paymentSession.orderId
+//             );
+
+//             if(order){
+
+//                 order.payment.status="FAILED";
+
+//                 await order.save();
+
+//             }
+
+//         }
+
+//         const transaction =
+//         await PaymentTransaction.findOne({
+
+//             paymentSession:
+//             paymentSession._id
+
+//         });
+
+//         if(transaction){
+
+//             transaction.status="FAILED";
+
+//             transaction.failureReason=
+//                 payment.error_description ||
+//                 payment.error_reason ||
+//                 "Payment Failed";
+
+//             transaction.gatewayResponse=
+//                 payment;
+
+//             transaction.failedAt=
+//                 new Date();
+
+//             transaction.timeline.push({
+
+//                 status:"FAILED",
+
+//                 message:
+//                 transaction.failureReason,
+
+//                 createdAt:new Date()
+
+//             });
+
+//             await transaction.save();
+
+//         }
+
+//         return res.status(200).json({
+//             success:true
+//         });
+
+//     }
+
+//     return res.status(200).json({
+//         success:true
+//     });
+
+// };
+
+
 import crypto from "crypto";
 import mongoose from "mongoose";
 
 import { Order } from "../models/OrderModel.js";
 import { PaymentSession } from "../models/PaymentSession.js";
+import { PaymentTransaction } from "../models/PaymentTransaction.js";
 import { Cart } from "../models/CartModel.js";
 import { Product } from "../models/ProductModel.js";
 
 export const razorpayWebhook = async (req, res) => {
-console.log("Webhook Hit");
 
-    const signature=req.headers["x-razorpay-signature"];
+    console.log("========== RAZORPAY WEBHOOK ==========");
 
-    const expected=crypto
+    //---------------------------------------------------
+    // Verify Signature
+    //---------------------------------------------------
+
+    const signature =
+        req.headers["x-razorpay-signature"];
+
+    const expectedSignature = crypto
         .createHmac(
             "sha256",
             process.env.RAZORPAY_WEBHOOK_SECRET
@@ -19,47 +382,63 @@ console.log("Webhook Hit");
         .update(req.body)
         .digest("hex");
 
-    console.log("Signature =",signature);
-    console.log("Expected =",expected);
+    if (signature !== expectedSignature) {
 
-    if(signature!==expected){
+        console.log("Invalid Webhook Signature");
 
         return res.status(400).json({
-            success:false,
-            message:"Invalid Signature"
+
+            success: false,
+
+            message: "Invalid webhook signature"
+
         });
 
     }
 
-    const payload=JSON.parse(req.body.toString());
+    //---------------------------------------------------
+    // Payload
+    //---------------------------------------------------
 
-    console.log(payload);
+    const payload =
+        JSON.parse(req.body.toString());
 
-    const event=payload.event;
+    const event =
+        payload.event;
 
-    console.log(event);
-    //----------------------------------------
-    // PAYMENT SUCCESS
-    //----------------------------------------
+    console.log("Webhook Event =", event);
+
+    //---------------------------------------------------
+    // PAYMENT CAPTURED
+    //---------------------------------------------------
 
     if (event === "payment.captured") {
 
-        const payment = payload.payload.payment.entity;
-        const gatewayOrderId = payment.order_id;
-        const gatewayPaymentId = payment.id;
+        const payment =
+            payload.payload.payment.entity;
 
-        console.log(gatewayOrderId);
-        console.log(gatewayPaymentId);
+        const gatewayOrderId =
+            payment.order_id;
 
-        const mongoSession = await mongoose.startSession();
+        const gatewayPaymentId =
+            payment.id;
+
+        const mongoSession =
+            await mongoose.startSession();
 
         try {
 
             await mongoSession.startTransaction();
 
+            //------------------------------------
+            // Payment Session
+            //------------------------------------
+
             const paymentSession =
                 await PaymentSession.findOne({
+
                     gatewayOrderId
+
                 }).session(mongoSession);
 
             if (!paymentSession) {
@@ -67,77 +446,207 @@ console.log("Webhook Hit");
                 await mongoSession.abortTransaction();
 
                 return res.status(404).json({
-                    success:false,
-                    message:"Payment session not found"
+
+                    success: false,
+
+                    message: "Payment Session not found"
+
                 });
 
             }
 
-            if (paymentSession.status === "SUCCESS") {
+            //------------------------------------
+            // Payment Transaction
+            //------------------------------------
+
+            const paymentTransaction =
+                await PaymentTransaction.findOne({
+
+                    paymentSession:
+                        paymentSession._id
+
+                }).session(mongoSession);
+
+            if (!paymentTransaction) {
+
+                throw new Error(
+                    "Payment Transaction not found"
+                );
+
+            }
+
+            //------------------------------------
+            // Idempotency
+            //------------------------------------
+
+            if (
+                paymentSession.status === "SUCCESS" &&
+                paymentTransaction.status === "SUCCESS"
+            ) {
 
                 await mongoSession.abortTransaction();
 
                 return res.status(200).json({
-                    success:true,
-                    message:"Already processed"
+
+                    success: true,
+
+                    message:
+                        "Already processed"
+
                 });
 
             }
 
-            //------------------------------------
-            // Payment Session
+            //-------------------------------------------------
+            // NEXT PART
+            // PaymentSession Update
+            // PaymentTransaction Update
+            // Order Update
+            // Stock Update
+            // Cart Clear
+            //-------------------------------------------------
+                        //------------------------------------
+            // Update Payment Session
             //------------------------------------
 
             paymentSession.status = "SUCCESS";
-            paymentSession.gatewayPaymentId = gatewayPaymentId;
-            paymentSession.paidAt = new Date();
+
+            paymentSession.gatewayPaymentId =
+                gatewayPaymentId;
+
+            paymentSession.gatewaySignature =
+                signature;
+
+            paymentSession.paidAt =
+                new Date();
+
+            paymentSession.gatewayResponse = {
+
+                entity: payment.entity,
+
+                amount: payment.amount,
+
+                currency: payment.currency,
+
+                status: payment.status,
+
+                method: payment.method,
+
+                bank: payment.bank,
+
+                wallet: payment.wallet,
+
+                vpa: payment.vpa,
+
+                email: payment.email,
+
+                contact: payment.contact,
+
+                fee: payment.fee,
+
+                tax: payment.tax,
+
+                rrn: payment.acquirer_data?.rrn,
+
+                utr: payment.acquirer_data?.upi_transaction_id,
+
+                acquirerData: payment.acquirer_data,
+
+                notes: payment.notes,
+
+                createdAt: payment.created_at
+
+            };
 
             await paymentSession.save({
-                session:mongoSession
+
+                session: mongoSession
+
             });
 
-            console.log("Payment Session =", paymentSession);
-
             //------------------------------------
-            // Order
+            // Update Payment Transaction
             //------------------------------------
 
-            const order = await Order.findById(
-                paymentSession.orderId
-            ).session(mongoSession);
+            paymentTransaction.status = "SUCCESS";
 
-            console.log("Order =", order);
+            paymentTransaction.gatewayPaymentId =
+                gatewayPaymentId;
+
+            paymentTransaction.gatewaySignature =
+                signature;
+
+            paymentTransaction.paidAt =
+                new Date();
+
+            paymentTransaction.gatewayResponse =
+                payment;
+
+            paymentTransaction.timeline.push({
+
+                status: "SUCCESS",
+
+                message: "Payment captured successfully.",
+
+                createdAt: new Date()
+
+            });
+
+            await paymentTransaction.save({
+
+                session: mongoSession
+
+            });
+
+            //------------------------------------
+            // Update Order
+            //------------------------------------
+
+            const order =
+                await Order.findById(
+                    paymentSession.orderId
+                ).session(mongoSession);
 
             if (!order) {
 
-                throw new Error("Order not found");
+                throw new Error(
+                    "Order not found"
+                );
 
             }
 
             order.payment.status = "SUCCESS";
-            order.payment.transactionId = gatewayPaymentId;
-            order.payment.paymentProvider = "RAZORPAY";
+
+            order.payment.transactionId =
+                gatewayPaymentId;
+
+            order.payment.paymentProvider =
+                "RAZORPAY";
 
             order.status = "CONFIRMED";
 
             await order.save({
-                session:mongoSession
+
+                session: mongoSession
+
             });
 
             //------------------------------------
-            // Stock Reduce
+            // Reduce Stock
             //------------------------------------
 
             for (const item of order.items) {
 
                 const product =
-                    await Product.findById(item.product)
-                        .session(mongoSession);
+                    await Product.findById(
+                        item.product
+                    ).session(mongoSession);
 
                 if (!product)
                     continue;
 
-                // Agar variants me stock hai to baad me variant update karenge
+                // Variant stock update
+                // Next phase me karenge
             }
 
             //------------------------------------
@@ -145,31 +654,46 @@ console.log("Webhook Hit");
             //------------------------------------
 
             await Cart.deleteMany({
+
                 user: order.user
+
             }).session(mongoSession);
+
+            //------------------------------------
+            // Commit Transaction
+            //------------------------------------
 
             await mongoSession.commitTransaction();
 
-            console.log("Payment Success");
+            console.log(
+                "Payment Captured Successfully"
+            );
 
             return res.status(200).json({
-                success:true
+
+                success: true
+
             });
 
         }
 
-        catch(err){
-            console.error("WEBHOOK ERROR");
-            console.error(err);
-            console.error(err.stack);
+        catch (err) {
+
             await mongoSession.abortTransaction();
+
+            console.error(err);
+
             return res.status(500).json({
-                success:false,
-                message:err.message
+
+                success: false,
+
+                message: err.message
+
             });
+
         }
 
-        finally{
+        finally {
 
             mongoSession.endSession();
 
@@ -177,32 +701,93 @@ console.log("Webhook Hit");
 
     }
 
-    //----------------------------------------
+    //-------------------------------------------------
+    // NEXT PART
+    // payment.failed
+    // refund.processed
+    // refund.failed
+    // default response
+    //-------------------------------------------------
+        //---------------------------------------------------
     // PAYMENT FAILED
-    //----------------------------------------
+    //---------------------------------------------------
 
-    if(event==="payment.failed"){
+    if (event === "payment.failed") {
 
-        const payment = payload.payload.payment.entity;
+        const payment =
+            payload.payload.payment.entity;
 
-        const paymentSession=
+        const paymentSession =
             await PaymentSession.findOne({
-                gatewayOrderId:payment.order_id
+
+                gatewayOrderId:
+                    payment.order_id
+
             });
 
-        if(paymentSession){
+        if (paymentSession) {
 
-            paymentSession.status="FAILED";
+            paymentSession.status = "FAILED";
+
+            paymentSession.failureReason =
+                payment.error_description ||
+                payment.error_reason ||
+                "Payment Failed";
+
+            paymentSession.gatewayResponse = payment;
 
             await paymentSession.save();
 
-            const order=await Order.findById(
-                paymentSession.orderId
-            );
+            const paymentTransaction =
+                await PaymentTransaction.findOne({
 
-            if(order){
+                    paymentSession:
+                        paymentSession._id
 
-                order.payment.status="FAILED";
+                });
+
+            if (paymentTransaction) {
+
+                paymentTransaction.status =
+                    "FAILED";
+
+                paymentTransaction.failureReason =
+                    payment.error_description ||
+                    payment.error_reason ||
+                    "Payment Failed";
+
+                paymentTransaction.failedAt =
+                    new Date();
+
+                paymentTransaction.gatewayResponse =
+                    payment;
+
+                paymentTransaction.timeline.push({
+
+                    status: "FAILED",
+
+                    message:
+                        payment.error_description ||
+                        payment.error_reason ||
+                        "Payment Failed",
+
+                    createdAt: new Date()
+
+                });
+
+                await paymentTransaction.save();
+
+            }
+
+            const order =
+                await Order.findById(
+                    paymentSession.orderId
+                );
+
+            if (order) {
+
+                order.payment.status =
+                    "FAILED";
 
                 await order.save();
 
@@ -211,13 +796,128 @@ console.log("Webhook Hit");
         }
 
         return res.status(200).json({
-            success:true
+
+            success: true
+
         });
 
     }
 
+    //---------------------------------------------------
+    // REFUND PROCESSED
+    //---------------------------------------------------
+
+    if (event === "refund.processed") {
+
+        const refund =
+            payload.payload.refund.entity;
+
+        const transaction =
+            await PaymentTransaction.findOne({
+
+                gatewayPaymentId:
+                    refund.payment_id
+
+            });
+
+        if (transaction) {
+
+            transaction.refund.status =
+                "PROCESSED";
+
+            transaction.refund.refundId =
+                refund.id;
+
+            transaction.refund.amount =
+                refund.amount / 100;
+
+            transaction.refund.processedAt =
+                new Date();
+
+            transaction.timeline.push({
+
+                status: "REFUND_PROCESSED",
+
+                message: "Refund completed",
+
+                createdAt: new Date()
+
+            });
+
+            await transaction.save();
+
+        }
+
+        return res.status(200).json({
+
+            success: true
+
+        });
+
+    }
+
+    //---------------------------------------------------
+    // REFUND FAILED
+    //---------------------------------------------------
+
+    if (event === "refund.failed") {
+
+        const refund =
+            payload.payload.refund.entity;
+
+        const transaction =
+            await PaymentTransaction.findOne({
+
+                gatewayPaymentId:
+                    refund.payment_id
+
+            });
+
+        if (transaction) {
+
+            transaction.refund.status =
+                "FAILED";
+
+            transaction.refund.refundId =
+                refund.id;
+
+            transaction.refund.failureReason =
+                refund.notes?.reason ||
+                "Refund Failed";
+
+            transaction.timeline.push({
+
+                status: "REFUND_FAILED",
+
+                message:
+                    transaction.refund.failureReason,
+
+                createdAt: new Date()
+
+            });
+
+            await transaction.save();
+
+        }
+
+        return res.status(200).json({
+
+            success: true
+
+        });
+
+    }
+
+    //---------------------------------------------------
+    // Ignore Other Events
+    //---------------------------------------------------
+
     return res.status(200).json({
-        success:true
+
+        success: true,
+
+        message: "Webhook ignored"
+
     });
 
 };

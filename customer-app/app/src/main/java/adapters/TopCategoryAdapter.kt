@@ -15,7 +15,6 @@ class TopCategoryAdapter(
     private val onItemClick: (TopCategory, Int) -> Unit
 ) : RecyclerView.Adapter<TopCategoryAdapter.CategoryViewHolder>() {
 
-    // Track active position, initially 0 (For You) selected
     private var selectedPosition = 0
 
     class CategoryViewHolder(view: View) : RecyclerView.ViewHolder(view) {
