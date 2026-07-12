@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import {razorpay} from "../config/razorpay.js"
 import { Address } from "../models/AddressModel.js";
 import { PaymentTransaction } from "../models/PaymentTransaction.js";
+import { ProductVariant } from "../models/ProductVariant.js";
 
 export const getRazorpayConfig = async (req, res) => {
     try {
