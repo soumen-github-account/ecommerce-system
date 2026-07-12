@@ -10,6 +10,7 @@ import SellerDashboard from './pages/SellerDashboard';
 import SellerLayout from './layouts/SellerLayout';
 import GuestSellerRoute from './pages/GuestSellerRoute';
 import ProtectedSellerRoute from './pages/ProtectedSellerRoute';
+import OrdersDashboard from './pages/OrdersDashboard';
 
 const App = () => {
   return (
@@ -41,7 +42,7 @@ const App = () => {
 
           <Route
             path="orders"
-            element={<div>Orders</div>}
+            element={<OrdersDashboard />}
           />
 
           <Route

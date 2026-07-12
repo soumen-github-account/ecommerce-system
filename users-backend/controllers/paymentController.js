@@ -85,6 +85,7 @@ export const createOrder = async (req, res) => {
             user: req.user._id,
 
             items: items.map(item => ({
+                seller: item.product.seller,
 
                 product: item.product._id,
 

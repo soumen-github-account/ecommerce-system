@@ -208,6 +208,12 @@ import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(
   {
+    seller: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Seller",
+      required: true,
+      index: true
+    },
     product: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
