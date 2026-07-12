@@ -8,6 +8,7 @@ import {razorpay} from "../config/razorpay.js"
 import { Address } from "../models/AddressModel.js";
 import { PaymentTransaction } from "../models/PaymentTransaction.js";
 import { ProductVariant } from "../models/ProductVariant.js";
+import { Product } from "../models/ProductModel.js";
 
 export const getRazorpayConfig = async (req, res) => {
     try {
