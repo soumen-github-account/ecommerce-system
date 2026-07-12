@@ -22,184 +22,184 @@ export const getRazorpayConfig = async (req, res) => {
     }
 };
 
-export const createOrder = async (req, res) => {
+// export const createOrder = async (req, res) => {
 
-    try {
+//     try {
 
-        const {
+//         const {
 
-            items,
+//             items,
 
-            totalAmount,
+//             totalAmount,
 
-            addressId,
+//             addressId,
 
-            paymentMethod
+//             paymentMethod
 
-        } = req.body;
+//         } = req.body;
 
-        if (!items || items.length === 0) {
+//         if (!items || items.length === 0) {
 
-            return res.status(400).json({
+//             return res.status(400).json({
 
-                success: false,
+//                 success: false,
 
-                message: "Cart is empty."
+//                 message: "Cart is empty."
 
-            });
+//             });
 
-        }
+//         }
 
-        const address = await Address.findOne({
+//         const address = await Address.findOne({
 
-            _id: addressId,
+//             _id: addressId,
 
-            user: req.user._id
+//             user: req.user._id
 
-        });
+//         });
 
-        if (!address) {
+//         if (!address) {
 
-            return res.status(404).json({
+//             return res.status(404).json({
 
-                success: false,
+//                 success: false,
 
-                message: "Address not found"
+//                 message: "Address not found"
 
-            });
+//             });
 
-        }
+//         }
 
-        const orderNumber =
+//         const orderNumber =
 
-            "CB" +
+//             "CB" +
 
-            Date.now() +
+//             Date.now() +
 
-            Math.floor(Math.random() * 1000);
+//             Math.floor(Math.random() * 1000);
 
-        const order = await Order.create({
+//         const order = await Order.create({
 
-            orderNumber,
+//             orderNumber,
 
-            user: req.user._id,
+//             user: req.user._id,
 
-            items: items.map(item => ({
-                seller: item.product.seller,
+//             items: items.map(item => ({
+//                 seller: item.product.seller,
 
-                product: item.product._id,
+//                 product: item.product._id,
 
-                variant: item.variant._id,
+//                 variant: item.variant._id,
 
-                sku: item.variant.sku,
+//                 sku: item.variant.sku,
 
-                quantity: item.quantity,
+//                 quantity: item.quantity,
 
-                pricing: {
+//                 pricing: {
 
-                    mrp: item.mrp,
+//                     mrp: item.mrp,
 
-                    sellingPrice: item.price,
+//                     sellingPrice: item.price,
 
-                    costPrice: item.costPrice || 0,
+//                     costPrice: item.costPrice || 0,
 
-                    discount: item.discount || 0,
+//                     discount: item.discount || 0,
 
-                    tax: item.tax || 0,
+//                     tax: item.tax || 0,
 
-                    total: item.price * item.quantity
+//                     total: item.price * item.quantity
 
-                },
+//                 },
 
-                snapshot: {
+//                 snapshot: {
 
-                    title: item.product.title,
+//                     title: item.product.title,
 
-                    variantName: item.variant.variantName,
+//                     variantName: item.variant.variantName,
 
-                    image: item.image,
+//                     image: item.image,
 
-                    attributes: item.variant.attributes
+//                     attributes: item.variant.attributes
 
-                }
+//                 }
 
-            })),
+//             })),
 
-            shippingAddress: {
+//             shippingAddress: {
 
-                fullName: address.fullName,
+//                 fullName: address.fullName,
 
-                phone: address.phone,
+//                 phone: address.phone,
 
-                addressLine1: address.addressLine1,
+//                 addressLine1: address.addressLine1,
 
-                addressLine2: address.addressLine2,
+//                 addressLine2: address.addressLine2,
 
-                landmark: address.landmark,
+//                 landmark: address.landmark,
 
-                city: address.city,
+//                 city: address.city,
 
-                state: address.state,
+//                 state: address.state,
 
-                country: address.country,
+//                 country: address.country,
 
-                pincode: address.pincode
+//                 pincode: address.pincode
 
-            },
+//             },
 
-            pricing: {
+//             pricing: {
 
-                subtotal: totalAmount,
+//                 subtotal: totalAmount,
 
-                discount: 0,
+//                 discount: 0,
 
-                shippingCharge: 0,
+//                 shippingCharge: 0,
 
-                tax: 0,
+//                 tax: 0,
 
-                totalAmount
+//                 totalAmount
 
-            },
+//             },
 
-            payment: {
+//             payment: {
 
-                method: paymentMethod,
+//                 method: paymentMethod,
 
-                status: "PENDING"
+//                 status: "PENDING"
 
-            },
+//             },
 
-            status: "PLACED"
+//             status: "PLACED"
 
-        });
+//         });
 
-        return res.status(201).json({
+//         return res.status(201).json({
 
-            success: true,
+//             success: true,
 
-            orderId: order._id,
+//             orderId: order._id,
 
-            orderNumber: order.orderNumber
+//             orderNumber: order.orderNumber
 
-        });
+//         });
 
-    }
+//     }
 
-    catch (error) {
+//     catch (error) {
 
-        console.log(error);
+//         console.log(error);
 
-        return res.status(500).json({
+//         return res.status(500).json({
 
-            success: false,
+//             success: false,
 
-            message: error.message
+//             message: error.message
 
-        });
+//         });
 
-    }
+//     }
 
-};
+// };
 
 // export const createPaymentSession = async (req, res) => {
 //     try {
@@ -394,6 +394,243 @@ export const createOrder = async (req, res) => {
 
 //     }
 // };
+
+export const createOrder = async (req, res) => {
+    try {
+
+        const {
+            items,
+            totalAmount,
+            addressId,
+            paymentMethod
+        } = req.body;
+
+        //----------------------------------------
+        // Validate
+        //----------------------------------------
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Cart is empty."
+            });
+        }
+
+        //----------------------------------------
+        // Address
+        //----------------------------------------
+
+        const address = await Address.findOne({
+            _id: addressId,
+            user: req.user._id
+        });
+
+        if (!address) {
+            return res.status(404).json({
+                success: false,
+                message: "Address not found."
+            });
+        }
+
+        //----------------------------------------
+        // Order Number
+        //----------------------------------------
+
+        const orderNumber =
+            "CB" +
+            Date.now() +
+            Math.floor(Math.random() * 1000);
+
+        //----------------------------------------
+        // Build Order Items
+        //----------------------------------------
+
+        const orderItems = [];
+
+        for (const item of items) {
+
+            //------------------------------------
+            // Variant
+            //------------------------------------
+
+            const variant = await ProductVariant
+                .findById(item.variant._id)
+                .populate("product");
+
+            if (!variant) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Variant not found."
+                });
+            }
+
+            //------------------------------------
+            // Product
+            //------------------------------------
+
+            const product = variant.product;
+
+            if (!product) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Product not found."
+                });
+            }
+
+            //------------------------------------
+            // Stock Check
+            //------------------------------------
+
+            if (variant.inventory.stock < item.quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: `${product.title} is out of stock`
+                });
+            }
+
+            //------------------------------------
+            // Order Item
+            //------------------------------------
+
+            orderItems.push({
+
+                seller: product.seller,
+
+                product: product._id,
+
+                variant: variant._id,
+
+                sku: variant.sku,
+
+                quantity: item.quantity,
+
+                pricing: {
+
+                    mrp: variant.pricing.mrp,
+
+                    sellingPrice: variant.pricing.sellingPrice,
+
+                    costPrice: variant.pricing.costPrice,
+
+                    discount: variant.pricing.discount,
+
+                    tax: variant.pricing.tax,
+
+                    total:
+                        variant.pricing.sellingPrice *
+                        item.quantity
+                },
+
+                snapshot: {
+
+                    title: product.title,
+
+                    variantName: variant.variantName,
+
+                    image:
+                        variant.images?.find(
+                            img => img.isPrimary
+                        )?.url ||
+                        variant.images?.[0]?.url,
+
+                    attributes:
+                        variant.attributes
+                }
+
+            });
+
+        }
+
+        //----------------------------------------
+        // Create Order
+        //----------------------------------------
+
+        const order = await Order.create({
+
+            orderNumber,
+
+            user: req.user._id,
+
+            items: orderItems,
+
+            shippingAddress: {
+
+                fullName: address.fullName,
+
+                phone: address.phone,
+
+                addressLine1: address.addressLine1,
+
+                addressLine2: address.addressLine2,
+
+                landmark: address.landmark,
+
+                city: address.city,
+
+                state: address.state,
+
+                country: address.country,
+
+                pincode: address.pincode
+
+            },
+
+            pricing: {
+
+                subtotal: totalAmount,
+
+                discount: 0,
+
+                shippingCharge: 0,
+
+                tax: 0,
+
+                totalAmount
+
+            },
+
+            payment: {
+
+                method: paymentMethod,
+
+                status: "PENDING"
+
+            },
+
+            status: "PLACED"
+
+        });
+
+        //----------------------------------------
+        // Response
+        //----------------------------------------
+
+        return res.status(201).json({
+
+            success: true,
+
+            orderId: order._id,
+
+            orderNumber: order.orderNumber
+
+        });
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+};
 
 export const createPaymentSession = async (req, res) => {
     const mongoSession = await mongoose.startSession();
