@@ -11,6 +11,7 @@ import SellerLayout from './layouts/SellerLayout';
 import GuestSellerRoute from './pages/GuestSellerRoute';
 import ProtectedSellerRoute from './pages/ProtectedSellerRoute';
 import OrdersDashboard from './pages/OrdersDashboard';
+import { OrderProvider } from './contexts/OrderContext';
 
 const App = () => {
   return (
@@ -42,7 +43,7 @@ const App = () => {
 
           <Route
             path="orders"
-            element={<OrdersDashboard />}
+            element={<OrderProvider><OrdersDashboard /></OrderProvider>}
           />
 
           <Route

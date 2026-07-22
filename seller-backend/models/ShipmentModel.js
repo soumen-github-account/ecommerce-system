@@ -72,6 +72,24 @@ const shipmentSchema = new mongoose.Schema(
         required: true
     },
 
+    items: [
+        {
+            product: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Product"
+            },
+
+            variant: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "ProductVariant"
+            },
+
+            sku: String,
+
+            quantity: Number
+        }
+    ],
+
     //----------------------------------
     // Shipment Identity
     //----------------------------------

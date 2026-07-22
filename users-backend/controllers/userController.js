@@ -89,90 +89,6 @@ export const createWishList = async (req, res) => {
 
 }
 
-// export const createWishList = async (req, res) => {
-
-//     try {
-
-//         const userId = req.user.id;
-
-//         const { productId, variantId, sellerId } = req.body;
-//         console.log(productId, variantId, sellerId)
-
-//         if (!productId || !variantId || !sellerId) {
-
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Missing required fields."
-//             });
-
-//         }
-
-//         let wishlist = await Wishlist.findOne({
-//             user: userId
-//         });
-
-//         if (!wishlist) {
-
-//             wishlist = await Wishlist.create({
-
-//                 user: userId,
-
-//                 items: []
-
-//             });
-
-//         }
-
-//         const alreadyExists = wishlist.items.find(item =>
-//           item.variant.toString() === variantId
-//         );
-
-//         if (alreadyExists) {
-//           return res.status(400).json({
-//               success:false,
-//               message:"Product already exists in wishlist."
-//           });
-//         }
-        
-
-//         wishlist.items.push({
-
-//             product: productId,
-
-//             variant: variantId,
-
-//             seller: sellerId
-
-//         });
-//         console.log(JSON.stringify(wishlist, null, 2));
-
-//         await wishlist.save();
-
-//         return res.status(201).json({
-
-//             success: true,
-
-//             message: "Wishlist updated successfully.",
-
-//             wishlist
-
-//         });
-
-//     }
-
-//     catch (error) {
-//       console.log(error);
-//       console.log(error.message);
-//       console.log(error.errors);
-
-//       return res.status(500).json({
-//           success: false,
-//           message: error.message
-//       });
-//     }
-
-// }
-
 export const removeWishlist = async (req,res)=>{
 
     try{
@@ -314,57 +230,6 @@ export const getWishlist = async (req, res) => {
     });
   }
 };
-
-// export const getWishlistProduct = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-
-//     const wishlist = await Wishlist.find({
-//       user: userId,
-//     }).populate({
-//       path: "product", // ProductVariant
-//       populate: [
-//         {
-//           path: "product", // Main Product
-//           populate: [
-//             {
-//               path: "category",
-//               select: "name",
-//             },
-//             {
-//               path: "subCategory",
-//               select: "name",
-//             },
-//             {
-//               path: "subCategoryLevel2",
-//               select: "name",
-//             },
-//             {
-//               path: "brand",
-//               select: "name logo",
-//             },
-//             {
-//               path: "seller",
-//               select: "storeName",
-//             },
-//           ],
-//         },
-//       ],
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       count: wishlist.length,
-//       wishlist,
-//     });
-
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
 
 export const addToCart = async (req, res) => {
   try {
@@ -935,32 +800,6 @@ export const checkout = async (req, res) => {
   }
 };
 
-// export const getMyOrders = async (
-//   req,
-//   res
-// ) => {
-//   try {
-
-//     const orders =
-//       await Order.find({
-//         user: req.user.id
-//       })
-//       .populate("address")
-//       .populate("items.product");
-
-//     res.json({
-//       success: true,
-//       orders
-//     });
-
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: error.message
-//     });
-//   }
-// };
-
 export const getMyOrders = async (req, res) => {
   try {
 
@@ -1014,14 +853,136 @@ export const getMyOrders = async (req, res) => {
 };
 
 export const getOrderById = async (req, res) => {
-    const order = await Order.findById(req.params.id)
-        .populate("address")
-        .populate("items.product");
+  try {
 
-    res.json({
-        success: true,
-        order
+    console.log("order")
+
+    const order = await Order.findOne({
+      _id: req.params.id,
+      user: req.user.id
+    })
+      .populate({
+        path: "items.product",
+        select: "title brand category subCategory subCategoryLevel2",
+        populate: [
+          {
+            path: "brand",
+            select: "name logo"
+          },
+          {
+            path: "category",
+            select: "name"
+          },
+          {
+            path: "subCategory",
+            select: "name"
+          },
+          {
+            path: "subCategoryLevel2",
+            select: "name"
+          }
+        ]
+      })
+      .populate({
+        path: "items.variant",
+        select: "variantName sku images attributes pricing inventory"
+      });
+
+      console.log(order)
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      order
     });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
 };
 
+export const getOrderTracking = async (req, res) => {
+  try {
+
+    const order = await Order.findOne({
+      _id: req.params.id,
+      user: req.user.id
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    const steps = [
+      {
+        key: "PLACED",
+        title: "Order Placed",
+        description: "Your order has been placed successfully."
+      },
+      {
+        key: "CONFIRMED",
+        title: "Order Confirmed",
+        description: "Seller has confirmed your order."
+      },
+      {
+        key: "PACKED",
+        title: "Packed",
+        description: "Your package has been packed."
+      },
+      {
+        key: "SHIPPED",
+        title: "Shipped",
+        description: "Your package has been shipped."
+      },
+      {
+        key: "OUT_FOR_DELIVERY",
+        title: "Out For Delivery",
+        description: "Your package is out for delivery."
+      },
+      {
+        key: "DELIVERED",
+        title: "Delivered",
+        description: "Order delivered successfully."
+      }
+    ];
+
+    const currentIndex = steps.findIndex(
+      item => item.key === order.status
+    );
+
+    const tracking = steps.map((item, index) => ({
+      status: item.key,
+      title: item.title,
+      description: item.description,
+      completed: currentIndex >= index,
+      date: order.createdAt
+    }));
+
+    return res.status(200).json({
+      success: true,
+      tracking
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+};
 

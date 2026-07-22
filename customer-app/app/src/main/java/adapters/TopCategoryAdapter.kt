@@ -23,7 +23,6 @@ class TopCategoryAdapter(
         val imgIcon: ImageView = view.findViewById(R.id.imgCategoryIcon)
         val txtName: TextView = view.findViewById(R.id.txtCategoryName)
         val selectionIndicator: View = view.findViewById(R.id.selectionIndicator)
-
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CategoryViewHolder {

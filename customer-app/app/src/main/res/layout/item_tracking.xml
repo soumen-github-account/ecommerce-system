@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="20dp"
+    android:paddingVertical="8dp">
+
+    <!-- Timeline -->
+
+    <LinearLayout
+        android:layout_width="32dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <View
+            android:id="@+id/topLine"
+            android:layout_width="3dp"
+            android:layout_height="30dp"
+            android:background="#14A83B"/>
+
+        <ImageView
+            android:id="@+id/imgStatus"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_green_circle"/>
+
+        <View
+            android:id="@+id/bottomLine"
+            android:layout_width="3dp"
+            android:layout_height="80dp"
+            android:background="#14A83B"/>
+
+    </LinearLayout>
+
+    <!-- Details -->
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Order Confirmed"
+            android:textColor="#000"
+            android:textSize="21sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/txtDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Wed, 8 Jul 2026"
+            android:textColor="#777"
+            android:textSize="17sp"/>
+
+        <TextView
+            android:id="@+id/txtDescription"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Your order has been placed."
+            android:textColor="#444"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/txtTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:text="08 Jul 2026 • 08:42 PM"
+            android:textColor="#888"
+            android:textSize="14sp"/>
+
+    </LinearLayout>
+
+</LinearLayout>

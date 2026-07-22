@@ -8,11 +8,15 @@ import data.remote.request.RemoveCartRequest
 import data.remote.request.UpdateCartRequest
 import data.remote.request.WishlistRequest
 import data.remote.response.AddressDeleteResponse
+import data.remote.response.CancelOrderResponse
 import data.remote.response.CartResponse
 import data.remote.response.CreateOrderResponse
 import data.remote.response.CreatePaymentSessionResponse
+import data.remote.response.MyOrdersResponse
+import data.remote.response.OrderDetailsResponse
 import data.remote.response.PaymentStatusResponse
 import data.remote.response.RazorpayConfigResponse
+import data.remote.response.TrackingResponse
 import data.remote.response.UserResponse
 import data.remote.response.WishlistDeleteResponse
 import data.remote.response.WishlistResponse
@@ -124,4 +128,46 @@ interface ApiService {
     suspend fun getRazorpayConfig(
         @Header("Authorization") token: String
     ): Response<RazorpayConfigResponse>
+
+    // ==============================
+// ORDERS
+// ==============================
+
+    @GET("api/user/orders")
+    suspend fun getMyOrders(
+        @Header("Authorization")
+        token: String
+    ): Response<MyOrdersResponse>
+
+
+    @GET("api/user/orders/{orderId}")
+    suspend fun getOrderDetails(
+        @Header("Authorization")
+        token: String,
+
+        @Path("orderId")
+        orderId: String
+    ): Response<OrderDetailsResponse>
+
+
+    @PUT("api/user/orders/{orderId}/cancel")
+    suspend fun cancelOrder(
+        @Header("Authorization")
+        token: String,
+
+        @Path("orderId")
+        orderId: String
+    ): Response<CancelOrderResponse>
+
+
+    @GET("api/user/orders/{orderId}/tracking")
+    suspend fun trackOrder(
+
+        @Header("Authorization")
+        token: String,
+
+        @Path("orderId")
+        orderId: String
+
+    ): Response<TrackingResponse>
 }

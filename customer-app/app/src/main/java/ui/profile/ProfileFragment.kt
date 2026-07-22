@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.ecommerce.citybasket.R
 import ui.auth.register.RegisterActivity
 import ui.checkout.OrderSuccessActivity
+import ui.orders.OrdersActivity
 import utils.TokenManager
 import viewmodel.SharedUserViewModel
 import viewmodel.UserViewModel
@@ -151,6 +152,9 @@ class ProfileFragment : Fragment() {
         )
 
         txtOrders.text = "My Orders"
+        layoutOrders.setOnClickListener {
+            startActivity(Intent(requireContext(), OrdersActivity::class.java))
+        }
 
         val layoutAddress =
             view.findViewById<View>(R.id.layoutAddress)

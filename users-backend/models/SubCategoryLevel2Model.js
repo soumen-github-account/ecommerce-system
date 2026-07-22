@@ -16,7 +16,7 @@ const SubCategoryLevel2Schema = new mongoose.Schema(
     subCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SubCategory",
-      required: true,
+      required: true
     },
   },
   {

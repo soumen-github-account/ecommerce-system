@@ -10,6 +10,7 @@ export const protect = async(req, res, next) => {
                 success: false,
                 message: "Authorization token missing"
             })
+            
         }
 
         const token = authHeader.split(" ")[1];

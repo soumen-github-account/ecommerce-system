@@ -167,8 +167,6 @@ export const getNestedSubCategories = async(req, res) => {
     }
 }
 
-//  NAYA CONTROLLER: Sirf Category Fragment ke liye jisme deep nesting hai
-
 export const getNestedCategories = async (req, res) => {
     try {
         // Isme hum subCategories ke andar jaakar subCategoryLevel2Ids ko bhi populate kar rahe hain
@@ -193,28 +191,6 @@ export const getNestedCategories = async (req, res) => {
     }
 };
 
-// export const getAllProductByCategory = async (req, res) => {
-//     try {
-//         const { categoryId } = req.params;
-
-//         const products = await Product.find({category: categoryId})
-//         .populate("category")
-//         .populate("subCategory")
-//         .populate("subCategoryLevel2");
-
-//         res.status(200).json({
-//             success: true,
-//             count: products.length,
-//             products,
-//         });
-
-//     } catch (error) {
-//         res.status(500).json({
-//             success: false,
-//             message: error.message,
-//         });
-//     }
-// };
 
 export const getAllProductByCategory = async (req, res) => {
   try {
@@ -277,153 +253,6 @@ export const getAllProductByCategory = async (req, res) => {
     });
   }
 };
-
-// export const getProductById = async (req, res) => {
-//     try {
-//         const { id } = req.params;
-
-//         const product = await Product.findById(id)
-//         .populate("category")
-//         .populate("subCategory")
-//         .populate("subCategoryLevel2");
-
-//         if (!product) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "Product not found"
-//             });
-//         }
-
-//         res.status(200).json({
-//             success: true,
-//             product
-//         });
-
-//     } catch (error) {
-//         res.status(500).json({
-//             success: false,
-//             message: error.message
-//         });
-//     }
-// };
-
-// export const getProductById = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     console.log(id)
-
-//     const variant = await ProductVariant.findById(id)
-//       .populate({
-//         path: "product",
-//         populate: [
-//           { path: "category" },
-//           { path: "subCategory" },
-//           { path: "subCategoryLevel2" },
-//         ],
-//       })
-//       .lean();
-//     //   console.log(variant)
-
-//     if (!variant || !variant.product) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Product not found",
-//       });
-//     }
-//     const allVariants = await ProductVariant.find({
-//       product: variant.product._id,
-//     })
-//       .select(
-//         "attributes images pricing.sellingPrice inventory.stock"
-//       )
-//       .lean();
-    
-//     const availableAttributes = {};
-
-//     allVariants.forEach((v) => {
-//       (v.attributes || []).forEach((attr) => {
-
-//         if (!availableAttributes[attr.name]) {
-//           availableAttributes[attr.name] = [];
-//         }
-
-//         const alreadyExists = availableAttributes[attr.name].find(
-//           (x) => x.value === attr.value
-//         );
-
-//         if (!alreadyExists) {
-//           availableAttributes[attr.name].push({
-//             variantId: v._id,
-//             value: attr.value,
-//             image: v.images?.[0]?.url || "",
-//             price: v.pricing?.sellingPrice || 0,
-//             stock: v.inventory?.stock || 0,
-//           });
-//         }
-
-//       });
-//     });
-
-//     const data = {
-//       _id: variant._id,
-//       productId: variant.product._id,
-
-//       title: variant.product.title,
-//       slug: variant.product.slug,
-//       description: variant.product.description,
-//       shortDescription: variant.product.shortDescription,
-
-//       brand: variant.product.brand,
-
-//       category: {
-//         _id: variant.product.category._id,
-//         name: variant.product.category.name,
-//         image: variant.product.category.image,
-//       },
-
-//       subCategory: {
-//         _id: variant.product.subCategory._id,
-//         name: variant.product.subCategory.name,
-//       },
-
-//       subCategoryLevel2: {
-//         _id: variant.product.subCategoryLevel2._id,
-//         name: variant.product.subCategoryLevel2.name,
-//         image: variant.product.subCategoryLevel2.image,
-//       },
-
-//       highlights: variant.product.highlights,
-
-//       variantName: variant.variantName,
-//       attributes: variant.attributes,
-//       specifications: variant.specifications,
-//       images: variant.images,
-//       variants: allVariants.map(v => ({
-//         variantId: v._id,
-//         attributes: v.attributes,
-//         price: v.pricing.sellingPrice,
-//         stock: v.inventory.stock,
-//         image: v.images?.[0]?.url
-//       })),
-//       pricing: variant.pricing,
-//       inventory: variant.inventory,
-//       shipping: variant.shipping,
-//     };
-
-//     console.log(data)
-
-//     return res.status(200).json({
-//       success: true,
-//       product: data,
-//     });
-
-//   } catch (error) {
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
 
 
 export const getProductById = async (req, res) => {
