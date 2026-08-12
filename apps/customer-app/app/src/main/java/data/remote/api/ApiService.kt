@@ -1,0 +1,163 @@
+package data.remote.api
+
+import data.remote.request.AddressRequest
+import data.remote.request.CartRequest
+import data.remote.request.CreateOrderRequest
+import data.remote.request.CreatePaymentSessionRequest
+import data.remote.request.RemoveCartRequest
+import data.remote.request.UpdateCartRequest
+import data.remote.request.WishlistRequest
+import data.remote.response.AddressDeleteResponse
+import data.remote.response.CancelOrderResponse
+import data.remote.response.CartResponse
+import data.remote.response.CreateOrderResponse
+import data.remote.response.CreatePaymentSessionResponse
+import data.remote.response.MyOrdersResponse
+import data.remote.response.OrderDetailsResponse
+import data.remote.response.PaymentStatusResponse
+import data.remote.response.RazorpayConfigResponse
+import data.remote.response.TrackingResponse
+import data.remote.response.UserResponse
+import data.remote.response.WishlistDeleteResponse
+import data.remote.response.WishlistResponse
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.HTTP
+import retrofit2.http.Header
+import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
+
+interface ApiService {
+
+    @GET("api/v1/users/me")
+    suspend fun getUser(
+        @Header("Authorization")
+        token: String
+    ): Response<UserResponse>
+
+    @POST("api/v1/users/cart")
+    suspend fun addToCart(@Header("Authorization") token: String, @Body request: CartRequest) : CartResponse
+
+    @GET("api/v1/users/cart")
+    suspend fun getCart(@Header("Authorization") token: String) : Response<CartResponse>
+
+    @HTTP(method = "DELETE", path = "api/v1/users/removeCartItem", hasBody = true)
+    suspend fun removeFromCart(
+        @Header("Authorization") token: String,
+        @Body request: RemoveCartRequest
+    ): Response<CartResponse>
+
+    @PUT("api/v1/users/cart-update-quantity")
+    suspend fun updateCartQuantity(
+        @Header("Authorization") token: String,
+        @Body request: UpdateCartRequest
+    ): Response<CartResponse>
+
+    @POST("api/v1/users/wishlist")
+    suspend fun addToWishlist(
+        @Header("Authorization") token: String,
+        @Body request: WishlistRequest
+    ): Response<WishlistResponse>
+
+    @GET("api/v1/users/wishlist")
+    suspend fun getWishlist(@Header("Authorization") token: String): Response<WishlistResponse>
+
+    @HTTP(
+        method = "DELETE",
+        path = "api/v1/users/wishlist",
+        hasBody = true
+    )
+    suspend fun removeWishlist(
+        @Header("Authorization")
+        token: String,
+
+        @Body
+        body: WishlistRequest
+    ): Response<WishlistDeleteResponse>
+
+    @POST("api/v1/users/addresses")
+    suspend fun createAddress(
+        @Header("Authorization") token: String,
+        @Body request: AddressRequest
+    ): Response<data.model.address.AddressResponse>
+
+    @GET("api/v1/users/addresses")
+    suspend fun getUserAddresses(
+        @Header("Authorization") token: String
+    ): Response<data.model.address.AddressListResponse>
+
+    @DELETE("api/v1/users/addresses/{addressId}")
+    suspend fun deleteAddress(
+        @Header("Authorization") token: String,
+        @Path("addressId") addressId: String
+    ): Response<AddressDeleteResponse>
+
+    @PUT("api/v1/users/addresses/{addressId}")
+    suspend fun updateAddress(
+        @Header("Authorization") token: String,
+        @Path("addressId") addressId: String,
+        @Body request: AddressRequest
+    ): Response<data.model.address.AddressResponse>
+
+    @POST("api/v1/payments/create-order")
+    suspend fun createOrder(
+        @Header("Authorization") token: String,
+        @Body request: CreateOrderRequest
+    ): Response<CreateOrderResponse>
+
+    @POST("api/v1/payments/create-session")
+    suspend fun createPaymentSession(
+        @Header("Authorization") token: String,
+        @Body request: CreatePaymentSessionRequest
+    ): Response<CreatePaymentSessionResponse>
+
+    @GET("api/v1/payments/status/{sessionId}")
+    suspend fun getPaymentStatus(
+
+        @Header("Authorization")
+        token: String,
+
+        @Path("sessionId")
+        sessionId: String
+    ): Response<PaymentStatusResponse>
+
+    @GET("api/v1/payments/razorpay-config")
+    suspend fun getRazorpayConfig(
+        @Header("Authorization") token: String
+    ): Response<RazorpayConfigResponse>
+
+    // ==============================
+    // ORDERS
+    // ==============================
+
+    @GET("api/v1/orders/")
+    suspend fun getMyOrders(
+        @Header("Authorization")
+        token: String
+    ): Response<MyOrdersResponse>
+
+
+    @GET("api/v1/orders/{orderId}")
+    suspend fun getOrderDetails(
+        @Header("Authorization")
+        token: String,
+
+        @Path("orderId")
+        orderId: String
+    ): Response<OrderDetailsResponse>
+
+
+    @GET("api/v1/orders/{orderId}/tracking")
+    suspend fun trackOrder(
+
+        @Header("Authorization")
+        token: String,
+
+        @Path("orderId")
+        orderId: String
+
+    ): Response<TrackingResponse>
+}

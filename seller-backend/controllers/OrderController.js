@@ -72,45 +72,6 @@ export const getSellerOrders = async (req, res) => {
         createdAt: -1,
       });
 
-    //---------------------------------------
-    // Keep Seller Items Only
-    //---------------------------------------
-
-    // let sellerOrders = orders.map(order => {
-
-    //     const sellerItems = order.items.filter(item =>
-
-    //         item.seller.toString() === sellerId.toString()
-
-    //     );
-
-    //     return {
-
-    //         _id: order._id,
-
-    //         orderNumber: order.orderNumber,
-
-    //         status: order.status,
-
-    //         createdAt: order.createdAt,
-
-    //         updatedAt: order.updatedAt,
-
-    //         payment: order.payment,
-
-    //         pricing: order.pricing,
-
-    //         shippingAddress: order.shippingAddress,
-
-    //         user: order.user,
-
-    //         items: sellerItems,
-    //         shipment
-
-    //     };
-
-    // });
-
     const sellerOrders = await Promise.all(
       orders.map(async (order) => {
         const sellerItems = order.items.filter(
@@ -143,7 +104,7 @@ export const getSellerOrders = async (req, res) => {
 
           items: sellerItems,
 
-          shipment, // <-- add this
+          shipment,
         };
       }),
     );

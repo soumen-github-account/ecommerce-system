@@ -1,0 +1,30 @@
+{
+  "name": "ecommerce-system",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+
+    "gateway": "npm --prefix api-gateway run dev",
+
+    "auth": "npm --prefix services/auth-service run dev",
+
+    "user": "npm --prefix services/user-service run dev",
+
+    "product": "npm --prefix services/product-service run dev",
+
+    "seller": "npm --prefix services/seller-service run dev",
+
+    "order": "npm --prefix services/order-service run dev",
+
+    "payment": "npm --prefix services/payment-service run dev",
+
+    "dev": "concurrently -n GATEWAY,AUTH,USER,PRODUCT,SELLER,ORDER,PAYMENT -c blue,green,yellow,magenta,cyan,red,white \"npm run gateway\" \"npm run auth\" \"npm run user\" \"npm run product\" \"npm run seller\" \"npm run order\" \"npm run payment\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^10.0.4"
+  }
+}

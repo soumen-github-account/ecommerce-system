@@ -4,26 +4,6 @@ import { SubCategory2 } from "../models/SubCategoryLevel2Model.js";
 import { ProductVariant } from "../models/ProductVariant.js";
 import { Product } from "../models/ProductModel.js";
 
-// export const getAllProduct = async(req, res) => {
-//     try {
-//         const products = await Product.find({})
-//             .populate("category")
-//             .populate("subCategory")
-//             .populate("subCategoryLevel2");
-
-//         res.json({
-//             success: true,
-//             products: products
-//         })
-        
-//     } catch (error) {
-//         res.json({
-//             success: false,
-//             message: error.message
-//         })        
-//     }
-// }
-
 export const getAllProduct = async (req, res) => {
   try {
     const products = await ProductVariant.find({
