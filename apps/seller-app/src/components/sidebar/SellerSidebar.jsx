@@ -12,7 +12,7 @@ import {
   CircleHelp,
   LogOut 
 } from "lucide-react";
-
+import logoImg from "../../assets/Logo.png"
 import SidebarItem from "./SidebarItem";
 import { logoutSeller } from "../../services/sellerApi";
 import { useSeller } from "../../contexts/SellerContext";
@@ -27,17 +27,17 @@ export default function SellerSidebar() {
 
       <div className="h-20 flex items-center px-7 border-b border-slate-800">
 
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-lg font-bold shadow-lg">
-          S
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-800 to-blue-900 flex items-center justify-center text-lg font-bold shadow-lg">
+          <img src={logoImg} className="rounded-full" alt="" />
         </div>
 
         <div className="ml-3">
-          <h2 className="font-bold tracking-wide">
-            Seller
+          <h2 className="text-[15px] font-bold tracking-wide">
+            Seller Hub
           </h2>
 
-          <p className="text-xs text-slate-400">
-            Control Panel
+          <p className="text-sm text-slate-300">
+            CityBasket
           </p>
         </div>
 

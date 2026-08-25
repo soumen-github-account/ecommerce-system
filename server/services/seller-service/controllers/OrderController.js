@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 import { Seller } from "../models/SellerModel.js";
 import { Shipment } from "../models/ShipmentModel.js";
@@ -17,931 +16,1191 @@ import { generateInvoice } from "../services/shipment/invoiceService.js";
 import { generatePackingSlip } from "../services/shipment/packingSlipService.js";
 import axios from "axios";
 
+const cleanString = (value) => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const cleaned = value.trim();
+
+  if (
+    !cleaned ||
+    cleaned === "," ||
+    cleaned === ",," ||
+    cleaned === "null" ||
+    cleaned === "undefined"
+  ) {
+    return "";
+  }
+
+  return cleaned;
+};
+
 export const getSellerOrders = async (req, res) => {
-
-    try {
-
-        //------------------------------------------
-        // Seller
-        //------------------------------------------
-
-        const sellerId = req.seller?._id;
-
-        if (!sellerId) {
-
-            return res.status(401).json({
-                success: false,
-                message: "Seller authentication required",
-            });
-
-        }
-
-
-        //------------------------------------------
-        // Query Params
-        //------------------------------------------
-
-        const page =
-            Number(req.query.page) || 1;
-
-        const limit =
-            Number(req.query.limit) || 10;
-
-        const search =
-            typeof req.query.search === "string"
-                ? req.query.search.trim()
-                : "";
-
-        const status =
-            typeof req.query.status === "string"
-                ? req.query.status.trim()
-                : "";
-
-        const date =
-            typeof req.query.date === "string"
-                ? req.query.date.trim()
-                : "";
-
-
-        //------------------------------------------
-        // ORDER SERVICE
-        //------------------------------------------
-
-        const orderResponse = await axios.post(
-
-            `${process.env.ORDER_SERVICE_URL}/internal/seller/orders`,
-
-            {
-                sellerId:
-                    sellerId.toString(),
-
-                page,
-
-                limit,
-
-                search,
-
-                status,
-
-                date,
-            },
-
-            {
-                headers: {
-                    Authorization:
-                        req.headers.authorization || "",
-                },
-
-                timeout: 10000,
-            }
-
-        );
-
-
-        //------------------------------------------
-        // Orders From Order Service
-        //------------------------------------------
-
-        const orders =
-            orderResponse.data.orders || [];
-
-
-        //------------------------------------------
-        // Build Final Seller Orders
-        //------------------------------------------
-
-        const sellerOrders =
-            await Promise.all(
-
-                orders.map(async (order) => {
-
-                    //--------------------------------
-                    // USER SERVICE
-                    //--------------------------------
-
-                    let user = null;
-
-                    try {
-
-                        if (order.user) {
-
-                            const userResponse =
-                                await axios.get(
-
-                                    `${process.env.USER_SERVICE_URL}/users/internal/user/${order.user}`,
-
-                                    {
-                                        headers: {
-                                            Authorization:
-                                                req.headers.authorization || "",
-                                        },
-
-                                        timeout: 5000,
-                                    }
-
-                                );
-
-                            if (
-                                userResponse.data?.success
-                            ) {
-
-                                user =
-                                    userResponse.data.user;
-
-                            }
-
-                        }
-
-                    } catch (error) {
-
-                        console.error(
-                            "[SELLER] USER SERVICE ERROR:",
-                            error.response?.data ||
-                            error.message
-                        );
-
-                    }
-
-
-                    //--------------------------------
-                    // PRODUCT SERVICE
-                    //--------------------------------
-
-                    let items =
-                        order.items || [];
-
-
-                    try {
-
-                        if (items.length > 0) {
-
-                            const productResponse =
-                                await axios.post(
-
-                                    `${process.env.PRODUCT_SERVICE_URL}/internal/order-products-internal`,
-
-                                    {
-                                        items:
-                                            items.map(
-                                                (item) => ({
-
-                                                    productId:
-                                                        item.product,
-
-                                                    variantId:
-                                                        item.variant,
-
-                                                })
-                                            ),
-                                    },
-
-                                    {
-                                        headers: {
-                                            Authorization:
-                                                req.headers.authorization || "",
-                                        },
-
-                                        timeout: 5000,
-                                    }
-
-                                );
-
-
-                            if (
-                                productResponse.data?.success
-                            ) {
-
-                                const productItems =
-                                    productResponse.data.items ||
-                                    productResponse.data.products ||
-                                    [];
-
-
-                                //--------------------------------
-                                // Merge Product Data
-                                //--------------------------------
-
-                                items =
-                                    items.map(
-                                        (item) => {
-
-                                            const product =
-                                                productItems.find(
-                                                    (p) => {
-
-                                                        return (
-
-                                                            String(
-                                                                p.productId ||
-                                                                p._id ||
-                                                                p.product
-                                                            ) ===
-                                                            String(
-                                                                item.product
-                                                            )
-
-                                                        );
-
-                                                    }
-                                                );
-
-
-                                            if (!product) {
-
-                                                return item;
-
-                                            }
-
-
-                                            return {
-
-                                                ...item,
-
-                                                product:
-                                                    product.product ||
-                                                    product.productData ||
-                                                    product,
-
-                                                variant:
-                                                    product.variant ||
-                                                    product.variantData ||
-                                                    item.variant,
-
-                                            };
-
-                                        }
-                                    );
-
-                            }
-
-                        }
-
-                    } catch (error) {
-
-                        console.error(
-                            "[SELLER] PRODUCT SERVICE ERROR:",
-                            error.response?.data ||
-                            error.message
-                        );
-
-                    }
-
-
-                    //--------------------------------
-                    // SHIPMENT
-                    //--------------------------------
-
-                    const shipment =
-                        await Shipment.findOne({
-
-                            order:
-                                order._id,
-
-                            seller:
-                                sellerId,
-
-                        });
-
-
-                    //--------------------------------
-                    // EXACT OLD RESPONSE
-                    //--------------------------------
-
-                    return {
-
-                        _id:
-                            order._id,
-
-                        orderNumber:
-                            order.orderNumber,
-
-                        status:
-                            order.status,
-
-                        createdAt:
-                            order.createdAt,
-
-                        updatedAt:
-                            order.updatedAt,
-
-                        payment:
-                            order.payment,
-
-                        pricing:
-                            order.pricing,
-
-                        shippingAddress:
-                            order.shippingAddress,
-
-                        user,
-
-                        items,
-
-                        shipment,
-                    };
-
-                })
-
-            );
-
-
-        //------------------------------------------
-        // Response
-        //------------------------------------------
-
-        return res.status(200).json({
-
-            success:
-                orderResponse.data.success,
-
-            orders:
-                sellerOrders,
-
-            pagination:
-                orderResponse.data.pagination,
-
-        });
-
-
-    } catch (error) {
-
-        console.error(
-            "[SELLER] GET SELLER ORDERS ERROR:",
-            error.response?.data ||
-            error.message
-        );
-
-
-        //------------------------------------------
-        // Order Service Error
-        //------------------------------------------
-
-        if (error.response) {
-
-            return res
-                .status(error.response.status)
-                .json(error.response.data);
-
-        }
-
-
-        //------------------------------------------
-        // Timeout
-        //------------------------------------------
-
-        if (
-            error.code === "ECONNABORTED" ||
-            error.code === "ETIMEDOUT"
-        ) {
-
-            return res.status(504).json({
-
-                success: false,
-
-                message:
-                    "Service request timeout",
-
-            });
-
-        }
-
-
-        //------------------------------------------
-        // Service Unavailable
-        //------------------------------------------
-
-        if (
-            error.code === "ECONNREFUSED" ||
-            error.code === "ENOTFOUND"
-        ) {
-
-            return res.status(503).json({
-
-                success: false,
-
-                message:
-                    "Required service unavailable",
-
-            });
-
-        }
-
-
-        //------------------------------------------
-        // Unknown Error
-        //------------------------------------------
-
-        return res.status(500).json({
-
-            success: false,
-
-            message:
-                "Unable to fetch seller orders",
-
-        });
-
+  try {
+    //------------------------------------------
+    // Seller
+    //------------------------------------------
+
+    const sellerId = req.seller?._id;
+
+    if (!sellerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Seller authentication required",
+      });
     }
 
+    //------------------------------------------
+    // Query Params
+    //------------------------------------------
+
+    const page = Number(req.query.page) > 0 ? Number(req.query.page) : 1;
+
+    const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 10;
+
+    const search = cleanString(req.query.search);
+
+    const status = cleanString(req.query.status);
+
+    const courier = cleanString(req.query.courier);
+    const paymentStatus = cleanString(req.query.paymentStatus);
+
+    const date = cleanString(req.query.date);
+
+    console.log("[SELLER] FILTERS:", {
+      page,
+      limit,
+      search,
+      status,
+      courier,
+      date,
+    });
+
+    const orderResponse = await axios.post(
+      `${process.env.ORDER_SERVICE_URL}/internal/seller/orders`,
+
+      {
+        sellerId: sellerId.toString(),
+      },
+
+      {
+        headers: {
+          Authorization: req.headers.authorization || "",
+        },
+
+        timeout: 10000,
+      },
+    );
+
+    //------------------------------------------
+    // Orders From Order Service
+    //------------------------------------------
+
+    let orders = orderResponse.data?.orders || [];
+
+    //------------------------------------------
+    // Build Seller Orders
+    //------------------------------------------
+
+    let sellerOrders = await Promise.all(
+      orders.map(async (order) => {
+        //--------------------------------
+        // USER SERVICE
+        //--------------------------------
+
+        let user = null;
+
+        try {
+          if (order.user) {
+            const userResponse = await axios.get(
+              `${process.env.USER_SERVICE_URL}/users/internal/user/${order.user}`,
+
+              {
+                headers: {
+                  Authorization: req.headers.authorization || "",
+                },
+
+                timeout: 5000,
+              },
+            );
+
+            if (userResponse.data?.success) {
+              user = userResponse.data.user;
+            }
+          }
+        } catch (error) {
+          console.error(
+            "[SELLER] USER SERVICE ERROR:",
+            error.response?.data || error.message,
+          );
+        }
+
+        //--------------------------------
+        // PRODUCT SERVICE
+        //--------------------------------
+
+        let items = order.items || [];
+
+        try {
+          if (items.length > 0) {
+            const productResponse = await axios.post(
+              `${process.env.PRODUCT_SERVICE_URL}/internal/order-products-internal`,
+
+              {
+                items: items.map((item) => ({
+                  productId: item.product,
+
+                  variantId: item.variant,
+                })),
+              },
+
+              {
+                headers: {
+                  Authorization: req.headers.authorization || "",
+                },
+
+                timeout: 5000,
+              },
+            );
+
+            if (productResponse.data?.success) {
+              const productItems =
+                productResponse.data.items ||
+                productResponse.data.products ||
+                [];
+
+              //--------------------------------
+              // Merge Product Data
+              //--------------------------------
+
+              items = items.map((item) => {
+                const product = productItems.find((p) => {
+                  return (
+                    String(p.productId || p._id || p.product) ===
+                    String(item.product)
+                  );
+                });
+
+                if (!product) {
+                  return item;
+                }
+
+                return {
+                  ...item,
+
+                  product: product.product || product.productData || product,
+
+                  variant:
+                    product.variant || product.variantData || item.variant,
+                };
+              });
+            }
+          }
+        } catch (error) {
+          console.error(
+            "[SELLER] PRODUCT SERVICE ERROR:",
+            error.response?.data || error.message,
+          );
+        }
+
+        //--------------------------------
+        // SHIPMENT
+        //--------------------------------
+
+        let shipment = null;
+
+        try {
+          shipment = await Shipment.findOne({
+            order: order._id,
+
+            seller: sellerId,
+          }).lean();
+        } catch (error) {
+          console.error("[SELLER] SHIPMENT ERROR:", error.message);
+        }
+
+        //--------------------------------
+        // FINAL ORDER
+        //--------------------------------
+
+        return {
+          _id: order._id,
+
+          orderNumber: order.orderNumber,
+
+          status: order.status,
+
+          createdAt: order.createdAt,
+
+          updatedAt: order.updatedAt,
+
+          payment: order.payment,
+
+          pricing: order.pricing,
+
+          shippingAddress: order.shippingAddress,
+
+          user,
+
+          items,
+
+          shipment,
+        };
+      }),
+    );
+
+    //==================================================
+    // SEARCH FILTER
+    //==================================================
+
+    if (search) {
+      const keyword = search.toLowerCase();
+
+      sellerOrders = sellerOrders.filter((order) => {
+        const orderNumber = String(order.orderNumber || "").toLowerCase();
+
+        const customerName = String(
+          order.user?.fullName ||
+            order.user?.firstName ||
+            order.shippingAddress?.fullName ||
+            "",
+        ).toLowerCase();
+
+        const email = String(
+          order.user?.email || order.shippingAddress?.email || "",
+        ).toLowerCase();
+
+        const phone = String(
+          order.user?.phone || order.shippingAddress?.phone || "",
+        ).toLowerCase();
+
+        const productName = (order.items || []).some((item) => {
+          const title = String(item.product?.title || "").toLowerCase();
+
+          const sku = String(item.sku || item.variant?.sku || "").toLowerCase();
+
+          return title.includes(keyword) || sku.includes(keyword);
+        });
+
+        return (
+          orderNumber.includes(keyword) ||
+          customerName.includes(keyword) ||
+          email.includes(keyword) ||
+          phone.includes(keyword) ||
+          productName
+        );
+      });
+    }
+
+    //==================================================
+    // STATUS FILTER
+    //==================================================
+
+    if (status) {
+      sellerOrders = sellerOrders.filter((order) => {
+        return (
+          String(order.status || "").toUpperCase() === status.toUpperCase()
+        );
+      });
+    }
+
+    //==================================================
+    // COURIER FILTER
+    //==================================================
+
+    if (courier) {
+      const courierKeyword = courier.toLowerCase();
+
+      sellerOrders = sellerOrders.filter((order) => {
+        const courierName = String(order.shipment?.courier || "").toLowerCase();
+
+        return courierName === courierKeyword;
+      });
+    }
+
+    //==================================================
+    // PAYMENT STATUS FILTER
+    //==================================================
+
+    if (paymentStatus) {
+      const paymentStatusKeyword = paymentStatus.toUpperCase();
+
+      sellerOrders = sellerOrders.filter((order) => {
+        const currentPaymentStatus = String(
+          order.payment?.status || "",
+        ).toUpperCase();
+
+        return currentPaymentStatus === paymentStatusKeyword;
+      });
+    }
+
+    //==================================================
+    // DATE FILTER
+    //==================================================
+
+    if (date) {
+      sellerOrders = sellerOrders.filter((order) => {
+        if (!order.createdAt) {
+          return false;
+        }
+
+        const orderDate = new Date(order.createdAt).toISOString().split("T")[0];
+
+        return orderDate === date;
+      });
+    }
+
+    //==================================================
+    // SORT
+    //==================================================
+
+    sellerOrders.sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    //==================================================
+    // PAGINATION
+    //==================================================
+
+    const pageNumber = Math.max(page, 1);
+
+    const limitNumber = Math.min(Math.max(limit, 1), 100);
+
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const total = sellerOrders.length;
+
+    const paginatedOrders = sellerOrders.slice(skip, skip + limitNumber);
+
+    //==================================================
+    // RESPONSE
+    //==================================================
+
+    return res.status(200).json({
+      success: true,
+
+      count: paginatedOrders.length,
+
+      orders: paginatedOrders,
+
+      pagination: {
+        page: pageNumber,
+
+        limit: limitNumber,
+
+        total,
+
+        totalPages: Math.ceil(total / limitNumber),
+      },
+    });
+  } catch (error) {
+    console.error(
+      "[SELLER] GET SELLER ORDERS ERROR:",
+      error.response?.data || error.message,
+    );
+
+    //------------------------------------------
+    // Order Service Error
+    //------------------------------------------
+
+    if (error.response) {
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    //------------------------------------------
+    // Timeout
+    //------------------------------------------
+
+    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+      return res.status(504).json({
+        success: false,
+
+        message: "Service request timeout",
+      });
+    }
+
+    //------------------------------------------
+    // Service Unavailable
+    //------------------------------------------
+
+    if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+      return res.status(503).json({
+        success: false,
+
+        message: "Required service unavailable",
+      });
+    }
+
+    //------------------------------------------
+    // Unknown Error
+    //------------------------------------------
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Unable to fetch seller orders",
+    });
+  }
+};
+
+export const getSellerOrderStats = async (req, res) => {
+  try {
+    const sellerId = req.seller?._id;
+
+    if (!sellerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Seller authentication required",
+      });
+    }
+
+    //==================================================
+    // DATE RANGE
+    //==================================================
+
+    const now = new Date();
+
+    const currentPeriodStart = new Date(now);
+
+    currentPeriodStart.setDate(currentPeriodStart.getDate() - 7);
+
+    const previousPeriodStart = new Date(currentPeriodStart);
+
+    previousPeriodStart.setDate(previousPeriodStart.getDate() - 7);
+
+    //==================================================
+    // ORDER SERVICE
+    //==================================================
+
+    const orderResponse = await axios.post(
+      `${process.env.ORDER_SERVICE_URL}/internal/seller/order-stats`,
+
+      {
+        sellerId: sellerId.toString(),
+      },
+
+      {
+        headers: {
+          Authorization: req.headers.authorization || "",
+        },
+
+        timeout: 10000,
+      },
+    );
+
+    console.log(orderResponse.data);
+
+    //==================================================
+    // DATA FROM ORDER SERVICE
+    //==================================================
+
+    const orders = orderResponse.data?.orders || [];
+
+    //==================================================
+    // CURRENT PERIOD
+    //==================================================
+
+    const currentOrders = orders.filter((order) => {
+      if (!order.createdAt) {
+        return false;
+      }
+
+      const createdAt = new Date(order.createdAt);
+
+      return createdAt >= currentPeriodStart;
+    });
+
+    //==================================================
+    // PREVIOUS PERIOD
+    //==================================================
+
+    const previousOrders = orders.filter((order) => {
+      if (!order.createdAt) {
+        return false;
+      }
+
+      const createdAt = new Date(order.createdAt);
+
+      return createdAt >= previousPeriodStart && createdAt < currentPeriodStart;
+    });
+
+    //==================================================
+    // STATUS COUNTER
+    //==================================================
+
+    const countStatus = (orderList, status) => {
+      return orderList.filter(
+        (order) => String(order.status || "").toUpperCase() === status,
+      ).length;
+    };
+
+    //==================================================
+    // CURRENT STATS
+    //==================================================
+
+    const totalOrders = currentOrders.length;
+
+    const pending =
+      countStatus(currentOrders, "PENDING") ||
+      countStatus(currentOrders, "PLACED");
+
+    const confirmed = countStatus(currentOrders, "CONFIRMED");
+
+    const packed = countStatus(currentOrders, "PACKED");
+
+    const readyToShip = countStatus(currentOrders, "READY_TO_SHIP");
+
+    const shipped = countStatus(currentOrders, "SHIPPED");
+
+    const cancelled = countStatus(currentOrders, "CANCELLED");
+
+    //==================================================
+    // RETURNS
+    //==================================================
+
+    const returns = currentOrders.filter((order) => {
+      const items = order.items || [];
+
+      return items.some((item) =>
+        ["RETURN_REQUESTED", "RETURNED"].includes(
+          String(item.status || "").toUpperCase(),
+        ),
+      );
+    }).length;
+
+    //==================================================
+    // PREVIOUS STATS
+    //==================================================
+
+    const previousTotalOrders = previousOrders.length;
+
+    const previousPending =
+      countStatus(previousOrders, "PENDING") ||
+      countStatus(previousOrders, "PLACED");
+
+    const previousConfirmed = countStatus(previousOrders, "CONFIRMED");
+
+    const previousPacked = countStatus(previousOrders, "PACKED");
+
+    const previousReadyToShip = countStatus(previousOrders, "READY_TO_SHIP");
+
+    const previousShipped = countStatus(previousOrders, "SHIPPED");
+
+    const previousCancelled = countStatus(previousOrders, "CANCELLED");
+
+    const previousReturns = previousOrders.filter((order) => {
+      const items = order.items || [];
+
+      return items.some((item) =>
+        ["RETURN_REQUESTED", "RETURNED"].includes(
+          String(item.status || "").toUpperCase(),
+        ),
+      );
+    }).length;
+
+    //==================================================
+    // PERCENTAGE CALCULATOR
+    //==================================================
+
+    const calculateChange = (current, previous) => {
+      if (previous === 0) {
+        if (current === 0) {
+          return 0;
+        }
+
+        return 100;
+      }
+
+      return Math.round(((current - previous) / previous) * 100);
+    };
+
+    //==================================================
+    // FINAL STATS
+    //==================================================
+
+    // const stats = {
+
+    //     totalOrders: {
+    //         count:
+    //             totalOrders,
+
+    //         change:
+    //             calculateChange(
+    //                 totalOrders,
+    //                 previousTotalOrders
+    //             ),
+    //     },
+
+    //     pending: {
+    //         count:
+    //             pending,
+
+    //         change:
+    //             calculateChange(
+    //                 pending,
+    //                 previousPending
+    //             ),
+    //     },
+
+    //     confirmed: {
+    //         count:
+    //             confirmed,
+
+    //         change:
+    //             calculateChange(
+    //                 confirmed,
+    //                 previousConfirmed
+    //             ),
+    //     },
+
+    //     packed: {
+    //         count:
+    //             packed,
+
+    //         change:
+    //             calculateChange(
+    //                 packed,
+    //                 previousPacked
+    //             ),
+    //     },
+
+    //     readyToShip: {
+    //         count:
+    //             readyToShip,
+
+    //         change:
+    //             calculateChange(
+    //                 readyToShip,
+    //                 previousReadyToShip
+    //             ),
+    //     },
+
+    //     shipped: {
+    //         count:
+    //             shipped,
+
+    //         change:
+    //             calculateChange(
+    //                 shipped,
+    //                 previousShipped
+    //             ),
+    //     },
+
+    //     returns: {
+    //         count:
+    //             returns,
+
+    //         change:
+    //             calculateChange(
+    //                 returns,
+    //                 previousReturns
+    //             ),
+    //     },
+
+    //     cancelled: {
+    //         count:
+    //             cancelled,
+
+    //         change:
+    //             calculateChange(
+    //                 cancelled,
+    //                 previousCancelled
+    //             ),
+    //     },
+
+    // };
+
+    const stats = {
+      total: totalOrders,
+
+      pending,
+
+      confirmed,
+
+      packed,
+
+      readyToShip,
+
+      shipped,
+
+      returns,
+
+      cancelled,
+
+      changes: {
+        total: calculateChange(totalOrders, previousTotalOrders),
+
+        pending: calculateChange(pending, previousPending),
+
+        confirmed: calculateChange(confirmed, previousConfirmed),
+
+        packed: calculateChange(packed, previousPacked),
+
+        readyToShip: calculateChange(readyToShip, previousReadyToShip),
+
+        shipped: calculateChange(shipped, previousShipped),
+
+        returns: calculateChange(returns, previousReturns),
+
+        cancelled: calculateChange(cancelled, previousCancelled),
+      },
+    };
+
+    //==================================================
+    // RESPONSE
+    //==================================================
+
+    return res.status(200).json({
+      success: true,
+
+      stats,
+
+      period: {
+        current: "LAST_7_DAYS",
+        previous: "PREVIOUS_7_DAYS",
+      },
+    });
+  } catch (error) {
+    console.error(
+      "[SELLER] GET ORDER STATS ERROR:",
+      error.response?.data || error.message,
+    );
+
+    if (error.response) {
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+      return res.status(504).json({
+        success: false,
+
+        message: "Order service timeout",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Unable to fetch order statistics",
+    });
+  }
 };
 
 export const getSellerOrderById = async (req, res) => {
-    try {
+  try {
+    const sellerId = req.seller?._id;
+    const { orderId } = req.params;
 
-        const sellerId = req.seller?._id;
-        const { orderId } = req.params;
+    //-----------------------------------------
+    // Validation
+    //-----------------------------------------
 
-        //-----------------------------------------
-        // Validation
-        //-----------------------------------------
-
-        if (!sellerId) {
-            return res.status(401).json({
-                success: false,
-                message: "Seller authentication required",
-            });
-        }
-
-        if (!orderId) {
-            return res.status(400).json({
-                success: false,
-                message: "Order ID is required",
-            });
-        }
-
-        //-----------------------------------------
-        // Order Service
-        //-----------------------------------------
-
-        const response = await axios.post(
-            `${process.env.ORDER_SERVICE_URL}/internal/seller/order/${orderId}`,
-            {
-                sellerId: sellerId.toString(),
-            },
-            {
-                headers: {
-                    Authorization:
-                        req.headers.authorization || "",
-                },
-
-                timeout: 10000,
-            }
-        );
-
-        //-----------------------------------------
-        // Response
-        //-----------------------------------------
-
-        return res
-            .status(response.status)
-            .json(response.data);
-
-    } catch (error) {
-
-        console.error(
-            "[SELLER] GET SELLER ORDER ERROR:",
-            error.response?.data || error.message
-        );
-
-        //-----------------------------------------
-        // Order Service Error
-        //-----------------------------------------
-
-        if (error.response) {
-            return res
-                .status(error.response.status)
-                .json(error.response.data);
-        }
-
-        //-----------------------------------------
-        // Timeout
-        //-----------------------------------------
-
-        if (error.code === "ECONNABORTED") {
-            return res.status(504).json({
-                success: false,
-                message: "Order Service timeout",
-            });
-        }
-
-        //-----------------------------------------
-        // Service unavailable
-        //-----------------------------------------
-
-        if (
-            error.code === "ECONNREFUSED" ||
-            error.code === "ENOTFOUND"
-        ) {
-            return res.status(503).json({
-                success: false,
-                message: "Order Service unavailable",
-            });
-        }
-
-        //-----------------------------------------
-        // Unknown Error
-        //-----------------------------------------
-
-        return res.status(500).json({
-            success: false,
-            message: "Unable to fetch order",
-        });
+    if (!sellerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Seller authentication required",
+      });
     }
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Order ID is required",
+      });
+    }
+
+    //-----------------------------------------
+    // Order Service
+    //-----------------------------------------
+
+    const response = await axios.post(
+      `${process.env.ORDER_SERVICE_URL}/internal/seller/order/${orderId}`,
+      {
+        sellerId: sellerId.toString(),
+      },
+      {
+        headers: {
+          Authorization: req.headers.authorization || "",
+        },
+
+        timeout: 10000,
+      },
+    );
+
+    //-----------------------------------------
+    // Response
+    //-----------------------------------------
+
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error(
+      "[SELLER] GET SELLER ORDER ERROR:",
+      error.response?.data || error.message,
+    );
+
+    //-----------------------------------------
+    // Order Service Error
+    //-----------------------------------------
+
+    if (error.response) {
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    //-----------------------------------------
+    // Timeout
+    //-----------------------------------------
+
+    if (error.code === "ECONNABORTED") {
+      return res.status(504).json({
+        success: false,
+        message: "Order Service timeout",
+      });
+    }
+
+    //-----------------------------------------
+    // Service unavailable
+    //-----------------------------------------
+
+    if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+      return res.status(503).json({
+        success: false,
+        message: "Order Service unavailable",
+      });
+    }
+
+    //-----------------------------------------
+    // Unknown Error
+    //-----------------------------------------
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch order",
+    });
+  }
 };
 
 export const generateShipment = async (req, res) => {
+  const mongoSession = await mongoose.startSession();
 
-    const mongoSession = await mongoose.startSession();
+  try {
+    await mongoSession.startTransaction();
 
-    try {
+    //------------------------------------
+    // Seller
+    //------------------------------------
 
-        await mongoSession.startTransaction();
+    const sellerId = req.seller._id;
 
-        //------------------------------------
-        // Seller
-        //------------------------------------
+    //------------------------------------
+    // Params
+    //------------------------------------
 
-        const sellerId = req.seller._id;
+    const orderId = req.params.orderId;
 
-        //------------------------------------
-        // Params
-        //------------------------------------
+    const { courier } = req.body;
 
-        const orderId = req.params.orderId;
+    console.log("params =", req.params);
+    console.log("body =", req.body);
+    console.log("orderId =", req.params.orderId);
 
-        const { courier } = req.body;
+    //------------------------------------
+    // Validate
+    //------------------------------------
 
-        console.log("params =", req.params);
-        console.log("body =", req.body);
-        console.log("orderId =", req.params.orderId);
+    if (!orderId) {
+      await mongoSession.abortTransaction();
 
-        //------------------------------------
-        // Validate
-        //------------------------------------
-
-        if (!orderId) {
-
-            await mongoSession.abortTransaction();
-
-            return res.status(400).json({
-                success: false,
-                message: "Order Id is required",
-            });
-        }
-
-        //------------------------------------
-        // Order Service
-        //------------------------------------
-
-        const orderResponse = await axios.get(
-            `${process.env.ORDER_SERVICE_URL}/internal/orders/${orderId}`,
-            {
-                headers: {
-                    Authorization: req.headers.authorization,
-                },
-
-                params: {
-                    sellerId: sellerId.toString(),
-                },
-
-                timeout: 10000,
-            }
-        );
-
-        if (!orderResponse.data.success) {
-
-            await mongoSession.abortTransaction();
-
-            return res.status(404).json({
-                success: false,
-                message: "Order not found",
-            });
-        }
-
-        const order = orderResponse.data.order;
-
-        //------------------------------------
-        // Seller
-        // Seller model belongs to Seller Service
-        //------------------------------------
-
-        const seller = await Seller.findById(
-            sellerId
-        ).session(mongoSession);
-
-        if (!seller) {
-
-            await mongoSession.abortTransaction();
-
-            return res.status(404).json({
-                success: false,
-                message: "Seller not found",
-            });
-        }
-
-        //------------------------------------
-        // Seller Approved
-        //------------------------------------
-
-        if (seller.status !== "Approved") {
-
-            await mongoSession.abortTransaction();
-
-            return res.status(403).json({
-                success: false,
-                message: "Seller is not approved",
-            });
-        }
-
-        //------------------------------------
-        // Seller Items
-        //------------------------------------
-
-        const sellerItems = order.items.filter(
-            (item) =>
-                item.seller.toString() ===
-                sellerId.toString()
-        );
-
-        if (sellerItems.length === 0) {
-
-            await mongoSession.abortTransaction();
-
-            return res.status(403).json({
-                success: false,
-                message:
-                    "You are not authorized for this order",
-            });
-        }
-
-        //------------------------------------
-        // Shipment Already Exists
-        //------------------------------------
-
-        const alreadyShipment =
-            await Shipment.findOne({
-                order: order._id,
-                seller: sellerId,
-            }).session(mongoSession);
-
-        if (alreadyShipment) {
-
-            await mongoSession.abortTransaction();
-
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Shipment already generated",
-            });
-        }
-
-        //------------------------------------
-        // Shipment Number
-        //------------------------------------
-
-        const shipmentNumber =
-            generateShipmentNumber();
-
-        //------------------------------------
-        // Tracking Number
-        //------------------------------------
-
-        const trackingNumber =
-            generateTrackingNumber();
-
-        //------------------------------------
-        // Shipment Data
-        //------------------------------------
-
-        const shipmentData = {
-            shipmentNumber,
-            trackingNumber,
-            orderNumber: order.orderNumber,
-            seller: seller._id,
-        };
-
-        //------------------------------------
-        // Barcode
-        //------------------------------------
-
-        const barcode =
-            await generateBarcode(
-                trackingNumber
-            );
-
-        //------------------------------------
-        // QR Code
-        //------------------------------------
-
-        const qr =
-            await generateQRCode(
-                shipmentData
-            );
-
-        //------------------------------------
-        // Shipment Instance
-        //------------------------------------
-
-        const shipment = new Shipment({
-
-            order: order._id,
-
-            user: order.user,
-
-            seller: seller._id,
-
-            items: sellerItems.map((item) => ({
-
-                product: item.product,
-
-                variant: item.variant,
-
-                sku: item.sku,
-
-                quantity: item.quantity,
-
-            })),
-
-            shipmentNumber,
-
-            trackingNumber,
-
-            courier: courier || "",
-
-            shippingAddress:
-                order.shippingAddress,
-
-            shippingCharge:
-                order.pricing.shippingCharge,
-
-            barcodeImage:
-                barcode.filePath,
-
-            qrCodeImage:
-                qr.filePath,
-
-            labelGeneratedAt:
-                new Date(),
-
-            status:
-                "LABEL_GENERATED",
-
-            logs: [
-                {
-                    status:
-                        "LABEL_GENERATED",
-
-                    description:
-                        "Shipping label generated",
-
-                    updatedBy:
-                        "SELLER",
-                },
-            ],
-
-        });
-
-        //------------------------------------
-        // Shipping Label PDF
-        //------------------------------------
-
-        const shippingLabel =
-            await generateShippingLabel(
-                shipment,
-                seller,
-                order,
-                barcode.filePath,
-                qr.filePath,
-            );
-
-        //------------------------------------
-        // Invoice PDF
-        //------------------------------------
-
-        const invoice =
-            await generateInvoice(
-                shipment,
-                seller,
-                order,
-            );
-
-        //------------------------------------
-        // Packing Slip PDF
-        //------------------------------------
-
-        const packingSlip =
-            await generatePackingSlip(
-                shipment,
-                seller,
-                order,
-            );
-
-        //------------------------------------
-        // Save Document Paths
-        //------------------------------------
-
-        shipment.documents = {
-
-            shippingLabelPdf:
-                shippingLabel.filePath,
-
-            invoicePdf:
-                invoice.filePath,
-
-            packingSlipPdf:
-                packingSlip.filePath,
-
-        };
-
-        shipment.invoiceGeneratedAt =
-            new Date();
-
-        shipment.packingSlipGeneratedAt =
-            new Date();
-
-        //------------------------------------
-        // Save Shipment
-        //------------------------------------
-
-        await shipment.save({
-            session: mongoSession,
-        });
-
-        //------------------------------------
-        // Update Order
-        //------------------------------------
-
-        await axios.patch(
-
-            `${process.env.ORDER_SERVICE_URL}/internal/orders/${order._id}/seller-items/packed`,
-
-            {
-                sellerId:
-                    sellerId.toString(),
-            },
-
-            {
-                headers: {
-                    Authorization:
-                        req.headers.authorization,
-                },
-
-                timeout: 10000,
-            }
-
-        );
-
-        //------------------------------------
-        // Commit
-        //------------------------------------
-
-        await mongoSession.commitTransaction();
-
-        //------------------------------------
-        // Response
-        //------------------------------------
-
-        return res.status(201).json({
-
-            success: true,
-
-            message:
-                "Shipment generated successfully",
-
-            shipment,
-
-        });
-
-    } catch (error) {
-
-        await mongoSession.abortTransaction();
-
-        console.error(
-            "GENERATE SHIPMENT ERROR:",
-            error.response?.data ||
-            error.message
-        );
-
-        if (error.response) {
-
-            return res
-                .status(error.response.status)
-                .json(error.response.data);
-        }
-
-        return res.status(500).json({
-
-            success: false,
-
-            message:
-                error.message,
-
-        });
-
-    } finally {
-
-        mongoSession.endSession();
-
+      return res.status(400).json({
+        success: false,
+        message: "Order Id is required",
+      });
     }
+
+    //------------------------------------
+    // Order Service
+    //------------------------------------
+
+    const orderResponse = await axios.get(
+      `${process.env.ORDER_SERVICE_URL}/internal/orders/${orderId}`,
+      {
+        headers: {
+          Authorization: req.headers.authorization,
+        },
+
+        params: {
+          sellerId: sellerId.toString(),
+        },
+
+        timeout: 10000,
+      },
+    );
+
+    if (!orderResponse.data.success) {
+      await mongoSession.abortTransaction();
+
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    const order = orderResponse.data.order;
+
+    //------------------------------------
+    // Seller
+    // Seller model belongs to Seller Service
+    //------------------------------------
+
+    const seller = await Seller.findById(sellerId).session(mongoSession);
+
+    if (!seller) {
+      await mongoSession.abortTransaction();
+
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+    }
+
+    //------------------------------------
+    // Seller Approved
+    //------------------------------------
+
+    if (seller.status !== "Approved") {
+      await mongoSession.abortTransaction();
+
+      return res.status(403).json({
+        success: false,
+        message: "Seller is not approved",
+      });
+    }
+
+    //------------------------------------
+    // Seller Items
+    //------------------------------------
+
+    const sellerItems = order.items.filter(
+      (item) => item.seller.toString() === sellerId.toString(),
+    );
+
+    if (sellerItems.length === 0) {
+      await mongoSession.abortTransaction();
+
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized for this order",
+      });
+    }
+
+    //------------------------------------
+    // Shipment Already Exists
+    //------------------------------------
+
+    const alreadyShipment = await Shipment.findOne({
+      order: order._id,
+      seller: sellerId,
+    }).session(mongoSession);
+
+    if (alreadyShipment) {
+      await mongoSession.abortTransaction();
+
+      return res.status(400).json({
+        success: false,
+        message: "Shipment already generated",
+      });
+    }
+
+    //------------------------------------
+    // Shipment Number
+    //------------------------------------
+
+    const shipmentNumber = generateShipmentNumber();
+
+    //------------------------------------
+    // Tracking Number
+    //------------------------------------
+
+    const trackingNumber = generateTrackingNumber();
+
+    //------------------------------------
+    // Shipment Data
+    //------------------------------------
+
+    const shipmentData = {
+      shipmentNumber,
+      trackingNumber,
+      orderNumber: order.orderNumber,
+      seller: seller._id,
+    };
+
+    //------------------------------------
+    // Barcode
+    //------------------------------------
+
+    const barcode = await generateBarcode(trackingNumber);
+
+    //------------------------------------
+    // QR Code
+    //------------------------------------
+
+    const qr = await generateQRCode(shipmentData);
+
+    //------------------------------------
+    // Shipment Instance
+    //------------------------------------
+
+    const shipment = new Shipment({
+      order: order._id,
+
+      user: order.user,
+
+      seller: seller._id,
+
+      items: sellerItems.map((item) => ({
+        product: item.product,
+
+        variant: item.variant,
+
+        sku: item.sku,
+
+        quantity: item.quantity,
+      })),
+
+      shipmentNumber,
+
+      trackingNumber,
+
+      courier: courier || "",
+
+      shippingAddress: order.shippingAddress,
+
+      shippingCharge: order.pricing.shippingCharge,
+
+      barcodeImage: barcode.filePath,
+
+      qrCodeImage: qr.filePath,
+
+      labelGeneratedAt: new Date(),
+
+      status: "LABEL_GENERATED",
+
+      logs: [
+        {
+          status: "LABEL_GENERATED",
+
+          description: "Shipping label generated",
+
+          updatedBy: "SELLER",
+        },
+      ],
+    });
+
+    //------------------------------------
+    // Shipping Label PDF
+    //------------------------------------
+
+    const shippingLabel = await generateShippingLabel(
+      shipment,
+      seller,
+      order,
+      barcode.filePath,
+      qr.filePath,
+    );
+
+    //------------------------------------
+    // Invoice PDF
+    //------------------------------------
+
+    const invoice = await generateInvoice(shipment, seller, order);
+
+    //------------------------------------
+    // Packing Slip PDF
+    //------------------------------------
+
+    const packingSlip = await generatePackingSlip(shipment, seller, order);
+
+    //------------------------------------
+    // Save Document Paths
+    //------------------------------------
+
+    shipment.documents = {
+      shippingLabelPdf: shippingLabel.filePath,
+
+      invoicePdf: invoice.filePath,
+
+      packingSlipPdf: packingSlip.filePath,
+    };
+
+    shipment.invoiceGeneratedAt = new Date();
+
+    shipment.packingSlipGeneratedAt = new Date();
+
+    //------------------------------------
+    // Save Shipment
+    //------------------------------------
+
+    await shipment.save({
+      session: mongoSession,
+    });
+
+    //------------------------------------
+    // Update Order
+    //------------------------------------
+
+    await axios.patch(
+      `${process.env.ORDER_SERVICE_URL}/internal/orders/${order._id}/seller-items/packed`,
+
+      {
+        sellerId: sellerId.toString(),
+      },
+
+      {
+        headers: {
+          Authorization: req.headers.authorization,
+        },
+
+        timeout: 10000,
+      },
+    );
+
+    //------------------------------------
+    // Commit
+    //------------------------------------
+
+    await mongoSession.commitTransaction();
+
+    //------------------------------------
+    // Response
+    //------------------------------------
+
+    return res.status(201).json({
+      success: true,
+
+      message: "Shipment generated successfully",
+
+      shipment,
+    });
+  } catch (error) {
+    await mongoSession.abortTransaction();
+
+    console.error(
+      "GENERATE SHIPMENT ERROR:",
+      error.response?.data || error.message,
+    );
+
+    if (error.response) {
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    return res.status(500).json({
+      success: false,
+
+      message: error.message,
+    });
+  } finally {
+    mongoSession.endSession();
+  }
 };
 
 export const downloadShippingLabel = async (req, res) => {
@@ -1398,18 +1657,14 @@ export const markReadyToShip = async (req, res) => {
             Authorization: req.headers.authorization || "",
           },
           timeout: 10000,
-        }
+        },
       );
 
-      console.log(
-        "[SELLER] ORDER SERVICE RESPONSE:",
-        response.data
-      );
-
+      console.log("[SELLER] ORDER SERVICE RESPONSE:", response.data);
     } catch (orderError) {
       console.error(
         "[SELLER] ORDER SERVICE ERROR:",
-        orderError.response?.data || orderError.message
+        orderError.response?.data || orderError.message,
       );
 
       /*
@@ -1423,8 +1678,7 @@ export const markReadyToShip = async (req, res) => {
         message: "Shipment updated but order status update failed.",
         shipment,
         orderServiceError:
-          orderError.response?.data?.message ||
-          orderError.message,
+          orderError.response?.data?.message || orderError.message,
       });
     }
 
@@ -1437,12 +1691,8 @@ export const markReadyToShip = async (req, res) => {
       message: "Shipment is ready to ship.",
       shipment,
     });
-
   } catch (error) {
-    console.error(
-      "[SELLER] MARK READY TO SHIP ERROR:",
-      error
-    );
+    console.error("[SELLER] MARK READY TO SHIP ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -1567,35 +1817,27 @@ export const markPickedUp = async (req, res) => {
         },
         {
           headers: {
-            Authorization:
-              req.headers.authorization || "",
+            Authorization: req.headers.authorization || "",
           },
           timeout: 10000,
-        }
+        },
       );
 
-      console.log(
-        "[SELLER] ORDER SERVICE RESPONSE:",
-        response.data
-      );
-
+      console.log("[SELLER] ORDER SERVICE RESPONSE:", response.data);
     } catch (orderError) {
       console.error(
         "[SELLER] ORDER SERVICE ERROR:",
-        orderError.response?.data ||
-          orderError.message
+        orderError.response?.data || orderError.message,
       );
 
       return res.status(502).json({
         success: false,
-        message:
-          "Shipment picked up but order status update failed.",
+        message: "Shipment picked up but order status update failed.",
 
         shipment,
 
         orderServiceError:
-          orderError.response?.data?.message ||
-          orderError.message,
+          orderError.response?.data?.message || orderError.message,
       });
     }
 
@@ -1608,12 +1850,8 @@ export const markPickedUp = async (req, res) => {
       message: "Shipment picked up.",
       shipment,
     });
-
   } catch (error) {
-    console.error(
-      "[SELLER] MARK PICKED UP ERROR:",
-      error
-    );
+    console.error("[SELLER] MARK PICKED UP ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -1744,11 +1982,9 @@ export const markDelivered = async (req, res) => {
     shipment.logs.push({
       status: "DELIVERED",
 
-      location:
-        shipment.shippingAddress?.city || "Unknown",
+      location: shipment.shippingAddress?.city || "Unknown",
 
-      description:
-        "Shipment delivered successfully.",
+      description: "Shipment delivered successfully.",
 
       updatedBy: "COURIER",
     });
@@ -1767,37 +2003,29 @@ export const markDelivered = async (req, res) => {
         },
         {
           headers: {
-            Authorization:
-              req.headers.authorization || "",
+            Authorization: req.headers.authorization || "",
           },
 
           timeout: 10000,
-        }
+        },
       );
 
-      console.log(
-        "[SELLER] ORDER SERVICE RESPONSE:",
-        response.data
-      );
-
+      console.log("[SELLER] ORDER SERVICE RESPONSE:", response.data);
     } catch (orderError) {
       console.error(
         "[SELLER] ORDER SERVICE ERROR:",
-        orderError.response?.data ||
-          orderError.message
+        orderError.response?.data || orderError.message,
       );
 
       return res.status(502).json({
         success: false,
 
-        message:
-          "Shipment delivered but order status update failed.",
+        message: "Shipment delivered but order status update failed.",
 
         shipment,
 
         orderServiceError:
-          orderError.response?.data?.message ||
-          orderError.message,
+          orderError.response?.data?.message || orderError.message,
       });
     }
 
@@ -1808,17 +2036,12 @@ export const markDelivered = async (req, res) => {
     return res.status(200).json({
       success: true,
 
-      message:
-        "Shipment delivered successfully.",
+      message: "Shipment delivered successfully.",
 
       shipment,
     });
-
   } catch (error) {
-    console.error(
-      "[SELLER] MARK DELIVERED ERROR:",
-      error
-    );
+    console.error("[SELLER] MARK DELIVERED ERROR:", error);
 
     return res.status(500).json({
       success: false,

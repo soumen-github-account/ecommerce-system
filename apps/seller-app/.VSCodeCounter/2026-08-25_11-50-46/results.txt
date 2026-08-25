@@ -1,0 +1,190 @@
+Date : 2026-08-25 11:50:46
+Directory : d:\ecommerce-system\apps\seller-app
+Total : 132 files,  151550 codes, 19378 comments, 2337 blanks, all 173265 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JavaScript     |         49 |    140,360 |     17,725 |        636 |    158,721 |
+| JavaScript JSX |         71 |      6,960 |      1,653 |      1,683 |     10,296 |
+| JSON           |          4 |      4,173 |          0 |          3 |      4,176 |
+| XML            |          4 |         27 |          0 |          2 |         29 |
+| HTML           |          1 |         13 |          0 |          1 |         14 |
+| Markdown       |          1 |          9 |          0 |          8 |         17 |
+| PostCSS        |          2 |          8 |          0 |          4 |         12 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-----------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                | files      | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                   |        132 |    151,550 |     19,378 |      2,337 |    173,265 |
+| . (Files)                                                                                           |          6 |      4,090 |          1 |         16 |      4,107 |
+| .vite                                                                                               |         23 |    139,426 |     17,002 |         25 |    156,453 |
+| .vite\deps                                                                                          |         23 |    139,426 |     17,002 |         25 |    156,453 |
+| public                                                                                              |          2 |         25 |          0 |          1 |         26 |
+| src                                                                                                 |        101 |      8,009 |      2,375 |      2,295 |     12,679 |
+| src (Files)                                                                                         |          4 |         98 |         14 |         23 |        135 |
+| src\assets                                                                                          |          3 |         49 |        238 |         41 |        328 |
+| src\components                                                                                      |         57 |      3,973 |      1,314 |      1,051 |      6,338 |
+| src\components\HomeComponent                                                                        |          6 |        233 |         16 |         37 |        286 |
+| src\components\common                                                                               |          8 |         99 |          0 |          8 |        107 |
+| src\components\navbar                                                                               |          4 |         81 |          5 |         41 |        127 |
+| src\components\orders                                                                               |         11 |      1,388 |        668 |        481 |      2,537 |
+| src\components\product                                                                              |         11 |      1,316 |        603 |        301 |      2,220 |
+| src\components\sellerRegisterForm                                                                   |         14 |        703 |         19 |        147 |        869 |
+| src\components\sellerRegisterForm (Files)                                                           |          2 |         24 |          0 |          4 |         28 |
+| src\components\sellerRegisterForm\map                                                               |          5 |        271 |          0 |         73 |        344 |
+| src\components\sellerRegisterForm\steps                                                             |          7 |        408 |         19 |         70 |        497 |
+| src\components\sidebar                                                                              |          3 |        153 |          3 |         36 |        192 |
+| src\constants                                                                                       |          1 |         49 |          0 |         20 |         69 |
+| src\contexts                                                                                        |          3 |        100 |         40 |         59 |        199 |
+| src\hooks                                                                                           |          8 |        459 |        128 |        166 |        753 |
+| src\layouts                                                                                         |          1 |         16 |          4 |          7 |         27 |
+| src\pages                                                                                           |         11 |      2,842 |        288 |        562 |      3,692 |
+| src\reducers                                                                                        |          2 |        144 |         59 |        106 |        309 |
+| src\schemas                                                                                         |          1 |        191 |        286 |        223 |        700 |
+| src\services                                                                                        |          5 |         88 |          4 |         32 |        124 |
+| src\store                                                                                           |          1 |          0 |          0 |          1 |          1 |
+| src\utils                                                                                           |          4 |          0 |          0 |          4 |          4 |
++-----------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-----------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                                            | language       | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| d:\ecommerce-system\apps\seller-app\.vite\deps\@hookform_resolvers_zod.js                           | JavaScript     |        149 |          5 |          1 |        155 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\@tanstack_react-query.js                             | JavaScript     |      2,955 |        126 |          1 |      3,082 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\_metadata.json                                       | JSON           |        128 |          0 |          0 |        128 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\axios.js                                             | JavaScript     |      2,639 |        743 |          1 |      3,383 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\chunk-B-1-B7_t.js                                    | JavaScript     |         31 |          2 |          1 |         34 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\core-D_QZK_Gx.js                                     | JavaScript     |     10,971 |        356 |          1 |     11,328 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\leaflet.js                                           | JavaScript     |      6,745 |          7 |          1 |      6,753 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\lucide-react.js                                      | JavaScript     |     35,105 |     10,511 |          1 |     45,617 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\package.json                                         | JSON           |          3 |          0 |          1 |          4 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-apexcharts.js                                  | JavaScript     |     26,326 |      3,951 |          1 |     30,278 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-dom-Br2l1Z8p.js                                | JavaScript     |        170 |         14 |          1 |        185 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-dom_client.js                                  | JavaScript     |     14,357 |         27 |          1 |     14,385 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-hook-form.js                                   | JavaScript     |      2,244 |        296 |          1 |      2,541 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-icons_fa.js                                    | JavaScript     |     17,835 |          7 |          1 |     17,843 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-is-Brv7YZgi.js                                 | JavaScript     |        145 |         13 |          1 |        159 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-leaflet.js                                     | JavaScript     |        575 |         71 |          1 |        647 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-router-dom.js                                  | JavaScript     |      9,721 |        457 |          4 |     10,182 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react-select.js                                      | JavaScript     |      5,248 |        332 |          1 |      5,581 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react.js                                             | JavaScript     |        754 |         14 |          1 |        769 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\react_jsx-dev-runtime.js                             | JavaScript     |        190 |         14 |          1 |        205 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\slugify.js                                           | JavaScript     |         37 |          3 |          1 |         41 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\sonner.js                                            | JavaScript     |        940 |          3 |          1 |        944 |
+| d:\ecommerce-system\apps\seller-app\.vite\deps\zod.js                                               | JavaScript     |      2,158 |         50 |          1 |      2,209 |
+| d:\ecommerce-system\apps\seller-app\README.md                                                       | Markdown       |          9 |          0 |          8 |         17 |
+| d:\ecommerce-system\apps\seller-app\eslint.config.js                                                | JavaScript     |         20 |          0 |          2 |         22 |
+| d:\ecommerce-system\apps\seller-app\index.html                                                      | HTML           |         13 |          0 |          1 |         14 |
+| d:\ecommerce-system\apps\seller-app\package-lock.json                                               | JSON           |      3,995 |          0 |          1 |      3,996 |
+| d:\ecommerce-system\apps\seller-app\package.json                                                    | JSON           |         47 |          0 |          1 |         48 |
+| d:\ecommerce-system\apps\seller-app\public\favicon.svg                                              | XML            |          1 |          0 |          0 |          1 |
+| d:\ecommerce-system\apps\seller-app\public\icons.svg                                                | XML            |         24 |          0 |          1 |         25 |
+| d:\ecommerce-system\apps\seller-app\src\App.css                                                     | PostCSS        |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\App.jsx                                                     | JavaScript JSX |         64 |          1 |         14 |         79 |
+| d:\ecommerce-system\apps\seller-app\src\assets\ordersData.js                                        | JavaScript     |         47 |        238 |         40 |        325 |
+| d:\ecommerce-system\apps\seller-app\src\assets\react.svg                                            | XML            |          1 |          0 |          0 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\assets\vite.svg                                             | XML            |          1 |          0 |          1 |          2 |
+| d:\ecommerce-system\apps\seller-app\src\components\HomeComponent\FeatureCard.jsx                    | JavaScript JSX |         37 |          2 |          5 |         44 |
+| d:\ecommerce-system\apps\seller-app\src\components\HomeComponent\Footer.jsx                         | JavaScript JSX |         62 |          4 |          7 |         73 |
+| d:\ecommerce-system\apps\seller-app\src\components\HomeComponent\GrowthTools.jsx                    | JavaScript JSX |         46 |          6 |          6 |         58 |
+| d:\ecommerce-system\apps\seller-app\src\components\HomeComponent\HeroSection.jsx                    | JavaScript JSX |         24 |          2 |          5 |         31 |
+| d:\ecommerce-system\apps\seller-app\src\components\HomeComponent\Navbar.jsx                         | JavaScript JSX |         30 |          0 |          5 |         35 |
+| d:\ecommerce-system\apps\seller-app\src\components\HomeComponent\SuccessStories.jsx                 | JavaScript JSX |         34 |          2 |          9 |         45 |
+| d:\ecommerce-system\apps\seller-app\src\components\common\Button.jsx                                | JavaScript JSX |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\components\common\FileUpload.jsx                            | JavaScript JSX |         24 |          0 |          0 |         24 |
+| d:\ecommerce-system\apps\seller-app\src\components\common\FormSelect.jsx                            | JavaScript JSX |         43 |          0 |          4 |         47 |
+| d:\ecommerce-system\apps\seller-app\src\components\common\Input.jsx                                 | JavaScript JSX |         14 |          0 |          0 |         14 |
+| d:\ecommerce-system\apps\seller-app\src\components\common\Loader.jsx                                | JavaScript JSX |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\components\common\Modal.jsx                                 | JavaScript JSX |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\components\common\Select.jsx                                | JavaScript JSX |         18 |          0 |          0 |         18 |
+| d:\ecommerce-system\apps\seller-app\src\components\common\Textarea.jsx                              | JavaScript JSX |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\components\navbar\NotificationButton.jsx                    | JavaScript JSX |          8 |          0 |          4 |         12 |
+| d:\ecommerce-system\apps\seller-app\src\components\navbar\ProfileDropdown.jsx                       | JavaScript JSX |          8 |          0 |          4 |         12 |
+| d:\ecommerce-system\apps\seller-app\src\components\navbar\SearchBox.jsx                             | JavaScript JSX |          8 |          0 |          4 |         12 |
+| d:\ecommerce-system\apps\seller-app\src\components\navbar\SellerNavbar.jsx                          | JavaScript JSX |         57 |          5 |         29 |         91 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\BulkActions.jsx                           | JavaScript JSX |         58 |          0 |         12 |         70 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\GenerateShipmentModal.jsx                 | JavaScript JSX |        102 |          0 |         27 |        129 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\OrderDrawer.jsx                           | JavaScript JSX |        101 |          0 |         39 |        140 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\OrderFilters.jsx                          | JavaScript JSX |        182 |        154 |         94 |        430 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\OrderRow.jsx                              | JavaScript JSX |        476 |        233 |        155 |        864 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\OrderSidebar.jsx                          | JavaScript JSX |         50 |          0 |         19 |         69 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\OrderStats.jsx                            | JavaScript JSX |        142 |        140 |         47 |        329 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\OrdersTable.jsx                           | JavaScript JSX |        257 |        141 |         85 |        483 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\Pagination.jsx                            | JavaScript JSX |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\ProductPreview.jsx                        | JavaScript JSX |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\components\orders\StatusBadge.jsx                           | JavaScript JSX |         20 |          0 |          1 |         21 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\CreatableBrandSelect.jsx                 | JavaScript JSX |         26 |          2 |          2 |         30 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\ProductStepper.jsx                       | JavaScript JSX |        115 |          2 |         17 |        134 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\Step1BasicInfo.jsx                       | JavaScript JSX |        168 |         23 |         31 |        222 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\Step2ProductDetails.jsx                  | JavaScript JSX |         85 |          0 |          4 |         89 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\Step3Specification.jsx                   | JavaScript JSX |        100 |         91 |         33 |        224 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\Step4Variants.jsx                        | JavaScript JSX |        370 |        453 |        143 |        966 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\Step5Review.jsx                          | JavaScript JSX |        183 |         11 |         28 |        222 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\Step5SEO.jsx                             | JavaScript JSX |         68 |          0 |          3 |         71 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\Step6Review.jsx                          | JavaScript JSX |         78 |          5 |          7 |         90 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\VariantCard.jsx                          | JavaScript JSX |        112 |          9 |         29 |        150 |
+| d:\ecommerce-system\apps\seller-app\src\components\product\calculateMargin.js                       | JavaScript     |         11 |          7 |          4 |         22 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\SidebarStepper.jsx            | JavaScript JSX |         16 |          0 |          0 |         16 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\StepNavigation.jsx            | JavaScript JSX |          8 |          0 |          4 |         12 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\map\CurrentLocationButton.jsx | JavaScript JSX |         47 |          0 |         18 |         65 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\map\ReverseGeocode.js         | JavaScript     |         30 |          0 |          8 |         38 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\map\SearchField.jsx           | JavaScript JSX |         74 |          0 |         18 |         92 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\map\StoreMap.jsx              | JavaScript JSX |        100 |          0 |         26 |        126 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\map\locationService.js        | JavaScript     |         20 |          0 |          3 |         23 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\steps\Step1Account.jsx        | JavaScript JSX |         47 |          0 |          5 |         52 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\steps\Step2Business.jsx       | JavaScript JSX |         55 |          0 |          7 |         62 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\steps\Step3Store.jsx          | JavaScript JSX |        129 |         16 |         37 |        182 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\steps\Step4Bank.jsx           | JavaScript JSX |         66 |          1 |          7 |         74 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\steps\Step5KYC.jsx            | JavaScript JSX |         43 |          0 |          6 |         49 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\steps\Step6Security.jsx       | JavaScript JSX |         44 |          1 |          6 |         51 |
+| d:\ecommerce-system\apps\seller-app\src\components\sellerRegisterForm\steps\Step7Success.jsx        | JavaScript JSX |         24 |          1 |          2 |         27 |
+| d:\ecommerce-system\apps\seller-app\src\components\sidebar\SellerSidebar.jsx                        | JavaScript JSX |        109 |          3 |         29 |        141 |
+| d:\ecommerce-system\apps\seller-app\src\components\sidebar\SidebarItem.jsx                          | JavaScript JSX |         36 |          0 |          3 |         39 |
+| d:\ecommerce-system\apps\seller-app\src\components\sidebar\SidebarLogo.jsx                          | JavaScript JSX |          8 |          0 |          4 |         12 |
+| d:\ecommerce-system\apps\seller-app\src\constants\initialProduct.js                                 | JavaScript     |         49 |          0 |         20 |         69 |
+| d:\ecommerce-system\apps\seller-app\src\contexts\OrderContext.jsx                                   | JavaScript JSX |         31 |         40 |         41 |        112 |
+| d:\ecommerce-system\apps\seller-app\src\contexts\ProductContext.jsx                                 | JavaScript JSX |         23 |          0 |          5 |         28 |
+| d:\ecommerce-system\apps\seller-app\src\contexts\SellerContext.jsx                                  | JavaScript JSX |         46 |          0 |         13 |         59 |
+| d:\ecommerce-system\apps\seller-app\src\hooks\useCategories.js                                      | JavaScript     |         24 |          0 |          3 |         27 |
+| d:\ecommerce-system\apps\seller-app\src\hooks\useFormPersist.js                                     | JavaScript     |         39 |         34 |         21 |         94 |
+| d:\ecommerce-system\apps\seller-app\src\hooks\useOrderActions.js                                    | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\hooks\useProductForm.js                                     | JavaScript     |         95 |         28 |         27 |        150 |
+| d:\ecommerce-system\apps\seller-app\src\hooks\useSellerOrders.js                                    | JavaScript     |        292 |         66 |        111 |        469 |
+| d:\ecommerce-system\apps\seller-app\src\hooks\useSellers.js                                         | JavaScript     |          9 |          0 |          1 |         10 |
+| d:\ecommerce-system\apps\seller-app\src\hooks\useShipment.js                                        | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\hooks\useVariant.js                                         | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\index.css                                                   | PostCSS        |          8 |          0 |          3 |         11 |
+| d:\ecommerce-system\apps\seller-app\src\layouts\SellerLayout.jsx                                    | JavaScript JSX |         16 |          4 |          7 |         27 |
+| d:\ecommerce-system\apps\seller-app\src\main.jsx                                                    | JavaScript JSX |         26 |         13 |          5 |         44 |
+| d:\ecommerce-system\apps\seller-app\src\pages\AddProductPage.jsx                                    | JavaScript JSX |        244 |         54 |         95 |        393 |
+| d:\ecommerce-system\apps\seller-app\src\pages\AllProducts.jsx                                       | JavaScript JSX |        462 |         17 |         62 |        541 |
+| d:\ecommerce-system\apps\seller-app\src\pages\CategoryAdmin.jsx                                     | JavaScript JSX |        178 |         58 |         45 |        281 |
+| d:\ecommerce-system\apps\seller-app\src\pages\GuestSellerRoute.jsx                                  | JavaScript JSX |         12 |          0 |          4 |         16 |
+| d:\ecommerce-system\apps\seller-app\src\pages\Inventory.jsx                                         | JavaScript JSX |        854 |         14 |        152 |      1,020 |
+| d:\ecommerce-system\apps\seller-app\src\pages\MainPage.jsx                                          | JavaScript JSX |         20 |          1 |          3 |         24 |
+| d:\ecommerce-system\apps\seller-app\src\pages\OrdersDashboard.jsx                                   | JavaScript JSX |         80 |         89 |         43 |        212 |
+| d:\ecommerce-system\apps\seller-app\src\pages\ProtectedSellerRoute.jsx                              | JavaScript JSX |         12 |          0 |          4 |         16 |
+| d:\ecommerce-system\apps\seller-app\src\pages\SellerDashboard.jsx                                   | JavaScript JSX |        764 |         48 |        116 |        928 |
+| d:\ecommerce-system\apps\seller-app\src\pages\SellerLogin.jsx                                       | JavaScript JSX |        112 |          0 |         18 |        130 |
+| d:\ecommerce-system\apps\seller-app\src\pages\SellerRegistration.jsx                                | JavaScript JSX |        104 |          7 |         20 |        131 |
+| d:\ecommerce-system\apps\seller-app\src\reducers\productReducer.js                                  | JavaScript     |         28 |          0 |          5 |         33 |
+| d:\ecommerce-system\apps\seller-app\src\reducers\sellerOrderReducer.js                              | JavaScript     |        116 |         59 |        101 |        276 |
+| d:\ecommerce-system\apps\seller-app\src\schemas\product.schema.js                                   | JavaScript     |        191 |        286 |        223 |        700 |
+| d:\ecommerce-system\apps\seller-app\src\services\brandApi.js                                        | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\services\categoryApi.js                                     | JavaScript     |         28 |          4 |          9 |         41 |
+| d:\ecommerce-system\apps\seller-app\src\services\orderApi.js                                        | JavaScript     |         43 |          0 |         15 |         58 |
+| d:\ecommerce-system\apps\seller-app\src\services\productApi.js                                      | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\services\sellerApi.js                                       | JavaScript     |         17 |          0 |          6 |         23 |
+| d:\ecommerce-system\apps\seller-app\src\store\orderSlice.js                                         | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\utils\buildFormData.js                                      | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\utils\generateSKU.js                                        | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\utils\slugify.js                                            | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\src\utils\validateProduct.js                                    | JavaScript     |          0 |          0 |          1 |          1 |
+| d:\ecommerce-system\apps\seller-app\vite.config.js                                                  | JavaScript     |          6 |          1 |          3 |         10 |
+| Total                                                                                               |                |    151,550 |     19,378 |      2,337 |    173,265 |
++-----------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

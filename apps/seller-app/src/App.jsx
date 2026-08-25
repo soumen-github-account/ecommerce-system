@@ -12,6 +12,8 @@ import GuestSellerRoute from './pages/GuestSellerRoute';
 import ProtectedSellerRoute from './pages/ProtectedSellerRoute';
 import OrdersDashboard from './pages/OrdersDashboard';
 import { OrderProvider } from './contexts/OrderContext';
+import AllProducts from './pages/AllProducts';
+import Inventory from './pages/Inventory';
 
 const App = () => {
   return (
@@ -33,7 +35,7 @@ const App = () => {
 
           <Route
             path="products"
-            element={<div>Products</div>}
+            element={<AllProducts />}
           />
 
           <Route
@@ -48,7 +50,7 @@ const App = () => {
 
           <Route
             path="inventory"
-            element={<div>Inventory</div>}
+            element={<Inventory />}
           />
 
           <Route

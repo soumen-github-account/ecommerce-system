@@ -4,6 +4,7 @@ import {
     getOrderForSellerInternal,
     getSellerOrderByIdInternal,
     getSellerOrdersInternal,
+    getSellerOrderStatsInternal,
     markSellerItemsPackedInternal,
     updateOrderStatusInternal,
 } from "../controllers/internalOrder.controller.js";
@@ -33,5 +34,11 @@ router.patch(
   "/orders/:orderId/status",
   updateOrderStatusInternal
 );
+
+router.post(
+  "/seller/order-stats",
+  getSellerOrderStatsInternal
+);
+
 
 export default router;

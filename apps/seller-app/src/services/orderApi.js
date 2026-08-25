@@ -8,6 +8,9 @@ const api = axios.create({
 export const getSellerOrders = (params) =>
     api.get("/api/v1/sellers/seller/orders", { params });
 
+export const getSellerOrderStats = () =>
+    api.get("/api/v1/sellers/seller/orders/stats");
+
 export const getSellerOrderDetails = (orderId) =>
     api.get(`/api/v1/sellers/seller/orders/${orderId}`);
 

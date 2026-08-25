@@ -1,10 +1,11 @@
 import express from "express"
-import { downloadInvoice, downloadPackingSlip, downloadSelectedLabels, downloadShippingLabel, generateShipment, getSellerOrderById, getSellerOrders, markDelivered, markInTransit, markOutForDelivery, markPickedUp, markReadyToShip, schedulePickup } from "../controllers/OrderController.js";
+import { downloadInvoice, downloadPackingSlip, downloadSelectedLabels, downloadShippingLabel, generateShipment, getSellerOrderById, getSellerOrders, getSellerOrderStats, markDelivered, markInTransit, markOutForDelivery, markPickedUp, markReadyToShip, schedulePickup } from "../controllers/OrderController.js";
 import sellerAuth from "../middlewares/sellerAuth.js";
 
 const router = express.Router();
 
 router.get("/orders", sellerAuth, getSellerOrders);
+router.get("/orders/stats", sellerAuth, getSellerOrderStats);
 router.get("/orders/:orderId", sellerAuth, getSellerOrderById);
 router.post("/orders/:orderId/generate-shipment", sellerAuth, generateShipment)
 router.get("/shipment/:shipmentId/label", sellerAuth, downloadShippingLabel);

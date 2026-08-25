@@ -29,7 +29,7 @@ export default function SidebarItem({
             className="transition-transform duration-300 group-hover:scale-110"
           />
 
-          <span className="text-[15px] font-medium">
+          <span className="text-[12px] font-medium">
             {title}
           </span>
         </>

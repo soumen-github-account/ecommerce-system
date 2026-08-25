@@ -1,113 +1,246 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { toast } from "sonner";
 
 import { useOrderContext } from "../contexts/OrderContext";
 
 import {
   getSellerOrders,
+  getSellerOrderStats,
   generateShipment,
   downloadShippingLabel,
   markReadyToShip,
   markPickedUp,
   markDelivered,
-  exportOrders,
   schedulePickup,
   markInTransit,
   markOutForDelivery,
 } from "../services/orderApi";
 
 export default function useSellerOrders() {
-  const {
-    state,
-
-    dispatch,
-  } = useOrderContext();
-  console.log("STATE =", state);
+  const { state, dispatch } = useOrderContext();
 
   //--------------------------------------------------
   // Fetch Orders
   //--------------------------------------------------
 
-  const fetchOrders = async (params = {}) => {
-    try {
-      dispatch({
-        type: "SET_LOADING",
-        payload: true,
-      });
+  const fetchOrders = useCallback(
+    async (params = {}) => {
+      try {
+        dispatch({
+          type: "SET_LOADING",
+          payload: true,
+        });
 
-      const { data } = await getSellerOrders({
-        page: state.pagination.page,
+        //------------------------------------------
+        // FINAL API PARAMS
+        //------------------------------------------
 
-        limit: state.pagination.limit,
+        const finalParams = {
+          page: params.page ?? state.pagination?.page ?? 1,
 
-        search: state.filters.search,
+          limit: params.limit ?? state.pagination?.limit ?? 10,
 
-        status: state.filters.status,
+          search:
+            params.search !== undefined
+              ? params.search
+              : state.filters?.search || "",
 
-        courier: state.filters.courier,
+          status:
+            params.status !== undefined
+              ? params.status
+              : state.filters?.status || "",
 
-        date: state.filters.date,
+          courier:
+            params.courier !== undefined
+              ? params.courier
+              : state.filters?.courier || "",
 
-        ...params,
-      });
+          paymentStatus:
+            params.paymentStatus !== undefined
+              ? params.paymentStatus
+              : state.filters?.paymentStatus || "",
 
-      // dispatch({
+          date:
+            params.date !== undefined ? params.date : state.filters?.date || "",
+        };
 
-      //     type: "FETCH_SUCCESS",
+        //------------------------------------------
+        // DEBUG
+        //------------------------------------------
 
-      //     payload: {
+        console.log("[SELLER] FINAL API PARAMS:", finalParams);
 
-      //         orders:
-      //             data.orders,
+        //==================================================
+        // ORDERS API
+        //==================================================
 
-      //         pagination:
-      //             data.pagination
+        const ordersResponse = await getSellerOrders(finalParams);
 
-      //     }
+        const ordersData = ordersResponse?.data;
 
-      // });
-      dispatch({
-        type: "SET_LOADING",
-        payload: false,
-      });
+        console.log("[SELLER] ORDERS RESPONSE:", ordersData);
 
-      dispatch({
-        type: "SET_ORDERS",
-        payload: {
-          orders: data.orders,
-          pagination: data.pagination,
-        },
-      });
-    } catch (error) {
-      dispatch({
-        type: "SET_LOADING",
-        payload: false,
-      });
+        //------------------------------------------
+        // SET ORDERS
+        //------------------------------------------
 
-      dispatch({
-        type: "SET_ERROR",
-        payload: message,
-      });
-    }
-  };
+        dispatch({
+          type: "SET_ORDERS",
+          payload: {
+            orders: ordersData?.orders || [],
 
-  //--------------------------------------------------
-  // Initial Load
-  //--------------------------------------------------
+            pagination: ordersData?.pagination || {
+              page: finalParams.page,
+              limit: finalParams.limit,
+              total: 0,
+              totalPages: 0,
+            },
+          },
+        });
+
+        //==================================================
+        // STATS API
+        //==================================================
+
+        try {
+          console.log("[SELLER] FETCHING ORDER STATS...");
+
+          const statsResponse = await getSellerOrderStats();
+
+          const statsData = statsResponse?.data;
+
+          console.log("[SELLER] ORDER STATS RESPONSE:", statsData);
+
+          //------------------------------------------
+          // SET STATS
+          //------------------------------------------
+
+          dispatch({
+            type: "SET_STATS",
+            payload: statsData?.stats || statsData || {},
+          });
+        } catch (statsError) {
+          console.error(
+            "[SELLER] FETCH ORDER STATS ERROR:",
+            statsError.response?.data || statsError.message,
+          );
+        }
+      } catch (error) {
+        console.error(
+          "[SELLER] FETCH ORDERS ERROR:",
+          error.response?.data || error.message,
+        );
+
+        dispatch({
+          type: "SET_ERROR",
+          payload: error.response?.data?.message || "Failed to fetch orders",
+        });
+      } finally {
+        dispatch({
+          type: "SET_LOADING",
+          payload: false,
+        });
+      }
+    },
+
+    [
+      state.pagination?.page,
+      state.pagination?.limit,
+
+      state.filters?.search,
+      state.filters?.status,
+      state.filters?.courier,
+      state.filters?.paymentStatus,
+      state.filters?.date,
+
+      dispatch,
+    ],
+  );
 
   useEffect(() => {
     fetchOrders();
   }, [
-    state.pagination.page,
-    state.pagination.limit,
-    state.filters.search,
-    state.filters.status,
-    state.filters.courier,
-    state.filters.date,
+    state.pagination?.page,
+    state.pagination?.limit,
+
+    state.filters?.search,
+    state.filters?.status,
+    state.filters?.courier,
+    state.filters?.paymentStatus,
+    state.filters?.date,
+
+    fetchOrders,
   ]);
 
   //--------------------------------------------------
-  // Generate Shipment
+  // APPLY FILTERS
+  //--------------------------------------------------
+
+  const applyFilters = useCallback(
+    (filters = {}) => {
+      console.log("[SELLER] APPLY FILTERS:", filters);
+
+      //------------------------------------------
+      // Save Filters
+      //------------------------------------------
+
+      dispatch({
+        type: "SET_FILTERS",
+        payload: {
+          search: filters.search || "",
+
+          status: filters.status || "",
+
+          courier: filters.courier || "",
+
+          paymentStatus: filters.paymentStatus || "",
+
+          date: filters.date || "",
+        },
+      });
+
+      //------------------------------------------
+      // Reset Page To 1
+      //------------------------------------------
+
+      dispatch({
+        type: "SET_PAGINATION",
+        payload: {
+          page: 1,
+        },
+      });
+    },
+    [dispatch],
+  );
+
+  //--------------------------------------------------
+  // RESET FILTERS
+  //--------------------------------------------------
+
+  const resetFilters = useCallback(() => {
+    console.log("[SELLER] RESET FILTERS");
+
+    dispatch({
+      type: "SET_FILTERS",
+      payload: {
+        search: "",
+        status: "",
+        courier: "",
+        paymentStatus: "",
+        date: "",
+      },
+    });
+
+    dispatch({
+      type: "SET_PAGINATION",
+      payload: {
+        page: 1,
+      },
+    });
+  }, [dispatch]);
+
+  //--------------------------------------------------
+  // GENERATE SHIPMENT
   //--------------------------------------------------
 
   const handleGenerateShipment = async (orderId, courier = "Delhivery") => {
@@ -137,8 +270,9 @@ export default function useSellerOrders() {
   };
 
   //--------------------------------------------------
-  // NEXT
+  // OPEN SHIPMENT MODAL
   //--------------------------------------------------
+
   const openShipmentModal = (order) => {
     dispatch({
       type: "OPEN_SHIPMENT_MODAL",
@@ -146,11 +280,19 @@ export default function useSellerOrders() {
     });
   };
 
+  //--------------------------------------------------
+  // CLOSE SHIPMENT MODAL
+  //--------------------------------------------------
+
   const closeShipmentModal = () => {
     dispatch({
       type: "CLOSE_SHIPMENT_MODAL",
     });
   };
+
+  //--------------------------------------------------
+  // DOWNLOAD SHIPPING LABEL
+  //--------------------------------------------------
 
   const handleDownloadLabel = async (shipmentId) => {
     try {
@@ -171,10 +313,18 @@ export default function useSellerOrders() {
       a.remove();
 
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      console.error("[SELLER] DOWNLOAD LABEL ERROR:", error);
+
+      toast.error(
+        error.response?.data?.message || "Failed to download shipping label.",
+      );
     }
   };
+
+  //--------------------------------------------------
+  // READY TO SHIP
+  //--------------------------------------------------
 
   const handleReadyToShip = async (shipmentId) => {
     try {
@@ -182,11 +332,17 @@ export default function useSellerOrders() {
 
       toast.success("Shipment Ready");
 
-      fetchOrders();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed");
+      await fetchOrders();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update shipment.",
+      );
     }
   };
+
+  //--------------------------------------------------
+  // SCHEDULE PICKUP
+  //--------------------------------------------------
 
   const handleSchedulePickup = async (shipmentId) => {
     try {
@@ -194,11 +350,17 @@ export default function useSellerOrders() {
 
       toast.success("Pickup Scheduled");
 
-      fetchOrders();
-    } catch (err) {
-      toast.error(err.response?.data?.message);
+      await fetchOrders();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to schedule pickup.",
+      );
     }
   };
+
+  //--------------------------------------------------
+  // PICKED UP
+  //--------------------------------------------------
 
   const handlePickedUp = async (shipmentId) => {
     try {
@@ -206,11 +368,17 @@ export default function useSellerOrders() {
 
       toast.success("Picked Up");
 
-      fetchOrders();
-    } catch (err) {
-      toast.error(err.response?.data?.message);
+      await fetchOrders();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update shipment.",
+      );
     }
   };
+
+  //--------------------------------------------------
+  // IN TRANSIT
+  //--------------------------------------------------
 
   const handleInTransit = async (shipmentId) => {
     try {
@@ -218,11 +386,17 @@ export default function useSellerOrders() {
 
       toast.success("Shipment In Transit");
 
-      fetchOrders();
-    } catch (err) {
-      toast.error(err.response?.data?.message);
+      await fetchOrders();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update shipment.",
+      );
     }
   };
+
+  //--------------------------------------------------
+  // OUT FOR DELIVERY
+  //--------------------------------------------------
 
   const handleOutForDelivery = async (shipmentId) => {
     try {
@@ -230,11 +404,17 @@ export default function useSellerOrders() {
 
       toast.success("Out For Delivery");
 
-      fetchOrders();
-    } catch (err) {
-      toast.error(err.response?.data?.message);
+      await fetchOrders();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update shipment.",
+      );
     }
   };
+
+  //--------------------------------------------------
+  // DELIVERED
+  //--------------------------------------------------
 
   const handleDelivered = async (shipmentId) => {
     try {
@@ -242,26 +422,47 @@ export default function useSellerOrders() {
 
       toast.success("Delivered");
 
-      fetchOrders();
-    } catch (err) {
-      toast.error(err.response?.data?.message);
+      await fetchOrders();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update shipment.",
+      );
     }
   };
 
+  //--------------------------------------------------
+  // RETURN
+  //--------------------------------------------------
+
   return {
     state,
+
     dispatch,
+
     fetchOrders,
+
+    applyFilters,
+
+    resetFilters,
+
     handleGenerateShipment,
+
     openShipmentModal,
+
     closeShipmentModal,
+
     handleDownloadLabel,
 
     handleReadyToShip,
+
     handleSchedulePickup,
+
     handlePickedUp,
+
     handleInTransit,
+
     handleOutForDelivery,
+
     handleDelivered,
   };
 }

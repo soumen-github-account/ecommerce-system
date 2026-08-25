@@ -1,9 +1,114 @@
 
-import OrderSidebar from "../components/orders/OrderSidebar";
+// import OrderStats from "../components/orders/OrderStats";
+// import OrderFilters from "../components/orders/OrderFilters";
+// import OrdersTable from "../components/orders/OrdersTable";
+// import useSellerOrders from "../hooks/useSellerOrders";
+// import { Download, ChevronDown } from "lucide-react";
+
+// export default function OrdersDashboard() {
+//   const {
+//     state,
+//     fetchOrders,
+//     openShipmentModal,
+//     closeShipmentModal,
+//     handleGenerateShipment,
+//     handleDownloadLabel,
+//     handleReadyToShip,
+//     handleSchedulePickup,
+//     handlePickedUp,
+//     handleInTransit,
+//     handleOutForDelivery,
+//     handleDelivered,
+//     applyFilters,
+//     resetFilters
+//   } = useSellerOrders();
+
+//   return (
+//     <div className="min-h-screen bg-[#f8fafc]">
+//       <main className="w-full px-6 py-6">
+
+//         {/* ================= HEADER ================= */}
+//         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+
+//           <div>
+//             <h1 className="text-[26px] leading-8 font-semibold tracking-[-0.5px] text-[#10203f]">
+//               Orders Management
+//             </h1>
+
+//             <p className="mt-1 text-[13px] text-[#667085]">
+//               Track, manage and process your orders efficiently
+//             </p>
+//           </div>
+
+//           <div className="flex items-center gap-3">
+
+//             <button
+//               type="button"
+//               className="h-[43px] px-5 rounded-lg border border-[#dfe4ec] bg-white text-[13px] font-medium text-[#17233d] hover:bg-gray-50 transition"
+//             >
+//               Import Orders
+//             </button>
+
+//             <button
+//               type="button"
+//               className="h-[43px] px-4 rounded-lg bg-[#1769e0] hover:bg-[#125bc3] text-white text-[13px] font-medium flex items-center gap-3 transition"
+//             >
+//               <Download size={16} />
+
+//               <span>Export Orders</span>
+
+//               <ChevronDown size={15} />
+//             </button>
+
+//           </div>
+//         </div>
+
+//         {/* ================= STATS ================= */}
+//         <OrderStats
+//           orders={state?.orders || []}
+//           stats={state?.stats}
+//         />
+
+//         {/* ================= FILTERS ================= */}
+//         <OrderFilters
+//           applyFilters={applyFilters}
+//           resetFilters={resetFilters}
+//         />
+
+//         {/* ================= TABLE ================= */}
+//         <OrdersTable
+//           orders={state?.orders || []}
+//           loading={state?.loading}
+//           error={state?.error}
+//           pagination={state?.pagination}
+//           refreshOrders={fetchOrders}
+
+//           openShipmentModal={openShipmentModal}
+//           closeShipmentModal={closeShipmentModal}
+//           handleGenerateShipment={handleGenerateShipment}
+//           handleDownloadLabel={handleDownloadLabel}
+
+//           state={state}
+
+//           handleReadyToShip={handleReadyToShip}
+//           handleSchedulePickup={handleSchedulePickup}
+//           handlePickedUp={handlePickedUp}
+//           handleInTransit={handleInTransit}
+//           handleOutForDelivery={handleOutForDelivery}
+//           handleDelivered={handleDelivered}
+//         />
+
+//       </main>
+//     </div>
+//   );
+// }
+
+
 import OrderStats from "../components/orders/OrderStats";
 import OrderFilters from "../components/orders/OrderFilters";
 import OrdersTable from "../components/orders/OrdersTable";
 import useSellerOrders from "../hooks/useSellerOrders";
+import { Download, ChevronDown } from "lucide-react";
 
 export default function OrdersDashboard() {
   const {
@@ -18,54 +123,90 @@ export default function OrdersDashboard() {
     handlePickedUp,
     handleInTransit,
     handleOutForDelivery,
-    handleDelivered
+    handleDelivered,
+    applyFilters,
+    resetFilters,
   } = useSellerOrders();
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="flex">
-        <OrderSidebar />
+    <div className="min-h-screen bg-[#f8fafc]">
+      <main className="w-full px-6 py-6">
 
-        <main className="flex-1 p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Orders Management</h1>
+        {/* ================= HEADER ================= */}
 
-              <p className="text-gray-500 mt-1">
-                Manage your seller orders efficiently.
-              </p>
-            </div>
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
 
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-medium">
-              Export Orders
-            </button>
+          <div>
+            <h1 className="text-[26px] leading-8 font-semibold tracking-[-0.5px] text-[#10203f]">
+              Orders Management
+            </h1>
+
+            <p className="mt-1 text-[13px] text-[#667085]">
+              Track, manage and process your orders efficiently
+            </p>
           </div>
 
-          <OrderStats />
+          <div className="flex items-center gap-3">
 
-          <OrderFilters />
+            <button
+              type="button"
+              className="h-[43px] px-5 rounded-lg border border-[#dfe4ec] bg-white text-[13px] font-medium text-[#17233d] hover:bg-gray-50 transition"
+            >
+              Import Orders
+            </button>
 
-          <OrdersTable
-            orders={state.orders}
-            loading={state.loading}
-            error={state.error}
-            pagination={state.pagination}
-            refreshOrders={fetchOrders}
-            openShipmentModal={openShipmentModal}
-            handleGenerateShipment={handleGenerateShipment}
-            state={state}
-            handleDownloadLabel={handleDownloadLabel}
+            <button
+              type="button"
+              className="h-[43px] px-4 rounded-lg bg-[#1769e0] hover:bg-[#125bc3] text-white text-[13px] font-medium flex items-center gap-3 transition"
+            >
+              <Download size={16} />
 
-            handleReadyToShip={handleReadyToShip}
-            handleSchedulePickup={handleSchedulePickup}
-            handlePickedUp={handlePickedUp}
-            handleInTransit={handleInTransit}
-            handleOutForDelivery={handleOutForDelivery}
-            handleDelivered={handleDelivered}
+              <span>Export Orders</span>
 
-          />
-        </main>
-      </div>
+              <ChevronDown size={15} />
+            </button>
+
+          </div>
+        </div>
+
+        {/* ================= STATS ================= */}
+
+        <OrderStats
+          stats={state?.stats}
+        />
+
+        {/* ================= FILTERS ================= */}
+
+        <OrderFilters
+          applyFilters={applyFilters}
+          resetFilters={resetFilters}
+        />
+
+        {/* ================= TABLE ================= */}
+
+        <OrdersTable
+          orders={state?.orders || []}
+          loading={state?.loading}
+          error={state?.error}
+          pagination={state?.pagination}
+          refreshOrders={fetchOrders}
+
+          openShipmentModal={openShipmentModal}
+          closeShipmentModal={closeShipmentModal}
+          handleGenerateShipment={handleGenerateShipment}
+          handleDownloadLabel={handleDownloadLabel}
+
+          state={state}
+
+          handleReadyToShip={handleReadyToShip}
+          handleSchedulePickup={handleSchedulePickup}
+          handlePickedUp={handlePickedUp}
+          handleInTransit={handleInTransit}
+          handleOutForDelivery={handleOutForDelivery}
+          handleDelivered={handleDelivered}
+        />
+
+      </main>
     </div>
   );
 }

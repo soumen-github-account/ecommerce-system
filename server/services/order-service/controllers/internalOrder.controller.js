@@ -3,69 +3,18 @@ import { Order } from "../models/OrderModel.js";
 import axios from "axios"
 import { Shipment } from "../models/ShipmentModel.js";
 
-
-//==================================================
-// CLEAN STRING
-//==================================================
-
-const cleanString = (value) => {
-
-    if (typeof value !== "string") {
-        return "";
-    }
-
-    const cleaned =
-        value.trim();
-
-    if (
-        !cleaned ||
-        cleaned === "," ||
-        cleaned === ",," ||
-        cleaned === "null" ||
-        cleaned === "undefined"
-    ) {
-        return "";
-    }
-
-    return cleaned;
-};
-
-
-//==================================================
-// GET SELLER ORDERS INTERNAL
-//==================================================
-
 export const getSellerOrdersInternal = async (req, res) => {
 
     try {
 
         //------------------------------------------
-        // Request Data
+        // Seller ID
         //------------------------------------------
 
         const sellerId =
             typeof req.body.sellerId === "string"
                 ? req.body.sellerId.trim()
                 : "";
-
-        const page =
-            Number(req.body.page) > 0
-                ? Number(req.body.page)
-                : 1;
-
-        const limit =
-            Number(req.body.limit) > 0
-                ? Number(req.body.limit)
-                : 10;
-
-        const search =
-            cleanString(req.body.search);
-
-        const status =
-            cleanString(req.body.status);
-
-        const date =
-            cleanString(req.body.date);
 
 
         //------------------------------------------
@@ -75,8 +24,12 @@ export const getSellerOrdersInternal = async (req, res) => {
         if (!sellerId) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "Seller ID is required",
+
+                message:
+                    "Seller ID is required",
+
             });
 
         }
@@ -89,12 +42,20 @@ export const getSellerOrdersInternal = async (req, res) => {
         ) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "Invalid seller ID",
+
+                message:
+                    "Invalid seller ID",
+
             });
 
         }
 
+
+        //------------------------------------------
+        // Seller Object ID
+        //------------------------------------------
 
         const sellerObjectId =
             new mongoose.Types.ObjectId(
@@ -102,9 +63,9 @@ export const getSellerOrdersInternal = async (req, res) => {
             );
 
 
-        //------------------------------------------
-        // Find Orders
-        //------------------------------------------
+        //==================================================
+        // FIND ORDERS
+        //==================================================
 
         let orders =
             await Order.find({
@@ -114,14 +75,16 @@ export const getSellerOrdersInternal = async (req, res) => {
 
             })
             .sort({
+
                 createdAt: -1,
+
             })
             .lean();
 
 
-        //------------------------------------------
-        // Keep Seller Items Only
-        //------------------------------------------
+        //==================================================
+        // KEEP SELLER ITEMS ONLY
+        //==================================================
 
         orders =
             orders
@@ -133,12 +96,17 @@ export const getSellerOrdersInternal = async (req, res) => {
                                 (item) => {
 
                                     if (!item.seller) {
+
                                         return false;
+
                                     }
 
+
                                     return (
+
                                         item.seller.toString() ===
                                         sellerId
+
                                     );
 
                                 }
@@ -171,7 +139,7 @@ export const getSellerOrdersInternal = async (req, res) => {
                         shippingAddress:
                             order.shippingAddress,
 
-                        // ONLY ID
+                        // ONLY USER ID
                         user:
                             order.user,
 
@@ -187,184 +155,23 @@ export const getSellerOrdersInternal = async (req, res) => {
                 );
 
 
-        //------------------------------------------
-        // Search
-        //------------------------------------------
-
-        if (search) {
-
-            const keyword =
-                search.toLowerCase();
-
-
-            orders =
-                orders.filter(
-                    (order) => {
-
-                        const orderNumber =
-                            String(
-                                order.orderNumber || ""
-                            ).toLowerCase();
-
-
-                        const customerName =
-                            String(
-                                order.shippingAddress
-                                    ?.fullName || ""
-                            ).toLowerCase();
-
-
-                        const email =
-                            String(
-                                order.shippingAddress
-                                    ?.email || ""
-                            ).toLowerCase();
-
-
-                        return (
-
-                            orderNumber.includes(
-                                keyword
-                            ) ||
-
-                            customerName.includes(
-                                keyword
-                            ) ||
-
-                            email.includes(
-                                keyword
-                            )
-
-                        );
-
-                    }
-                );
-
-        }
-
-
-        //------------------------------------------
-        // Status
-        //------------------------------------------
-
-        if (status) {
-
-            orders =
-                orders.filter(
-                    (order) =>
-                        String(
-                            order.status || ""
-                        ) === status
-                );
-
-        }
-
-
-        //------------------------------------------
-        // Date
-        //------------------------------------------
-
-        if (date) {
-
-            orders =
-                orders.filter(
-                    (order) => {
-
-                        if (!order.createdAt) {
-                            return false;
-                        }
-
-
-                        const orderDate =
-                            new Date(
-                                order.createdAt
-                            )
-                            .toISOString()
-                            .split("T")[0];
-
-
-                        return (
-                            orderDate === date
-                        );
-
-                    }
-                );
-
-        }
-
-
-        //------------------------------------------
-        // Pagination
-        //------------------------------------------
-
-        const pageNumber =
-            Math.max(
-                Number(page) || 1,
-                1
-            );
-
-
-        const limitNumber =
-            Math.min(
-                Math.max(
-                    Number(limit) || 10,
-                    1
-                ),
-                100
-            );
-
-
-        const skip =
-            (pageNumber - 1) *
-            limitNumber;
-
-
-        const total =
-            orders.length;
-
-
-        const paginatedOrders =
-            orders.slice(
-                skip,
-                skip + limitNumber
-            );
-
-
-        //------------------------------------------
-        // Response
-        //------------------------------------------
+        //==================================================
+        // RESPONSE
+        //==================================================
 
         return res.status(200).json({
 
             success: true,
 
-            orders:
-                paginatedOrders,
-
-            pagination: {
-
-                page:
-                    pageNumber,
-
-                limit:
-                    limitNumber,
-
-                total,
-
-                totalPages:
-                    Math.ceil(
-                        total /
-                        limitNumber
-                    ),
-
-            },
+            orders,
 
         });
+
 
     } catch (error) {
 
         console.error(
-            "[ORDER] GET SELLER ORDERS ERROR:",
+            "[ORDER] GET SELLER ORDERS INTERNAL ERROR:",
             error
         );
 
@@ -954,5 +761,107 @@ export const updateOrderStatusInternal = async (req, res) => {
       message: error.message,
     });
   }
+};
+
+export const getSellerOrderStatsInternal = async (req, res) => {
+
+    try {
+
+        //==================================================
+        // SELLER ID
+        //==================================================
+
+        const sellerId =
+            typeof req.body.sellerId === "string"
+                ? req.body.sellerId.trim()
+                : "";
+
+
+        if (!sellerId) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Seller ID is required",
+
+            });
+
+        }
+
+
+        if (
+            !mongoose.Types.ObjectId.isValid(
+                sellerId
+            )
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Invalid seller ID",
+
+            });
+
+        }
+
+
+        //==================================================
+        // GET SELLER ORDERS
+        //==================================================
+
+        const orders =
+            await Order.find({
+
+                "items.seller":
+                    new mongoose.Types.ObjectId(
+                        sellerId
+                    ),
+
+            })
+            .select(
+                "_id orderNumber status createdAt items.status"
+            )
+            .sort({
+                createdAt: -1,
+            })
+            .lean();
+
+
+        //==================================================
+        // RESPONSE
+        //==================================================
+
+        return res.status(200).json({
+
+            success: true,
+
+            orders,
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "[ORDER] SELLER ORDER STATS ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                error.message,
+
+        });
+
+    }
+
 };
 
