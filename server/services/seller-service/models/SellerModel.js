@@ -126,6 +126,31 @@ const sellerSchema = new mongoose.Schema(
 
     },
 
+   financial: {
+        razorpayLinkedAccountId: {
+            type: String,
+            default: null,
+            index: true
+        },
+
+        razorpayStatus: {
+            type: String,
+            enum: [
+                "NOT_CREATED",
+                "PENDING",
+                "ACTIVE",
+                "SUSPENDED",
+                "FAILED"
+            ],
+            default: "NOT_CREATED"
+        },
+
+        payoutEnabled: {
+            type: Boolean,
+            default: false
+        }
+    },
+
     kyc: {
 
     aadhar: {

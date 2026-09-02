@@ -8,6 +8,9 @@ import categoryRoute from "./routes/categoryRoute.js"
 import sellerRoute from "./routes/sellerRoutes.js"
 import cookieParser from "cookie-parser"
 import orderRoute from "./routes/orderRoute.js"
+import productEditRoute from "./routes/productEditRoute.js"
+import sellerDashboardRoute from "./routes/sellerDashboardRoutes.js"
+
 
 const PORT = process.env.PORT || 5003
 const app = express()
@@ -27,6 +30,8 @@ app.use("/sellers/product", productRoute);
 app.use("/sellers/category", categoryRoute);
 app.use("/sellers/seller", sellerRoute);
 app.use("/sellers/seller", orderRoute)
+app.use("/sellers/product-edit", productEditRoute)
+app.use("/sellers/dashboard",sellerDashboardRoute);
 
 app.use((err, req, res, next) => {
   console.log("Error Code:", err.code);

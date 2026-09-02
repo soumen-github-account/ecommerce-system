@@ -14,6 +14,9 @@ import OrdersDashboard from './pages/OrdersDashboard';
 import { OrderProvider } from './contexts/OrderContext';
 import AllProducts from './pages/AllProducts';
 import Inventory from './pages/Inventory';
+import EditProduct from './pages/EditProduct';
+import EditVariant from './pages/EditVariant';
+import PaymentsAndEarnings from './pages/PaymentsAndEarnings';
 
 const App = () => {
   return (
@@ -60,12 +63,20 @@ const App = () => {
 
           <Route
             path="payments"
-            element={<div>Payments</div>}
+            element={<PaymentsAndEarnings />}
           />
 
           <Route
             path="settings"
             element={<div>Settings</div>}
+          />
+          <Route
+            path="/seller/products/edit/:productId"
+            element={<EditProduct />}
+          />
+          <Route
+            path="/seller/products/:productId/variants/:variantId/edit"
+            element={<EditVariant />}
           />
 
         </Route>

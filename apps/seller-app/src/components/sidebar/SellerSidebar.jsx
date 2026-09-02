@@ -71,11 +71,11 @@ export default function SellerSidebar() {
           title="Orders"
         />
 
-        <SidebarItem
+        {/* <SidebarItem
           to="/seller/inventory"
           icon={Boxes}
           title="Inventory / Stock"
-        />
+        /> */}
 
         <SidebarItem
           to="/seller/returns"
@@ -83,11 +83,11 @@ export default function SellerSidebar() {
           title="Returns"
         />
 
-        <SidebarItem
+        {/* <SidebarItem
           to="/seller/analytics"
           icon={BarChart3}
           title="Analytics / Reports"
-        />
+        /> */}
 
         <SidebarItem
           to="/seller/payments"

@@ -2,12 +2,17 @@ import express from "express";
 
 import {
     getOrderForSellerInternal,
+    getOrderInternal,
+    getSellerDashboardData,
     getSellerOrderByIdInternal,
     getSellerOrdersInternal,
     getSellerOrderStatsInternal,
     markSellerItemsPackedInternal,
+    paymentFailedInternal,
+    paymentSuccessInternal,
     updateOrderStatusInternal,
 } from "../controllers/internalOrder.controller.js";
+import { internalServiceAuth } from "../middlewares/internalServiceAuth.js";
 
 const router = express.Router();
 
@@ -40,5 +45,30 @@ router.post(
   getSellerOrderStatsInternal
 );
 
+router.get(
+    "/orders/seller-dashboard/:sellerId", internalServiceAuth,
+    getSellerDashboardData
+);
+
+
+router.get(
+    "/orders/get-order/:orderId",
+    internalServiceAuth,
+    getOrderInternal
+);
+
+
+router.patch(
+    "/orders/:orderId/payment-success",
+    internalServiceAuth,
+    paymentSuccessInternal
+);
+
+
+router.patch(
+    "/orders/:orderId/payment-failed",
+    internalServiceAuth,
+    paymentFailedInternal
+);
 
 export default router;
