@@ -1,6 +1,6 @@
 const services = {
     auth: "http://localhost:8000",
-    user: "http://localhost:5002",
+    user:   process.env.USER_SERVICE, // "https://ecommerce-system-user-service.onrender.com", // http://localhost:5002
     seller: "http://localhost:5003",
     product: "http://localhost:5004",
     inventory: "http://localhost:5005",
