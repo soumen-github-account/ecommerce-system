@@ -26,6 +26,14 @@ app.get("/", (req, res) => {
     res.json("Api is running")
 })
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    service: "Seller Service",
+    status: "UP",
+  });
+});
+
 app.use("/sellers/product", productRoute);
 app.use("/sellers/category", categoryRoute);
 app.use("/sellers/seller", sellerRoute);

@@ -19,6 +19,14 @@ app.get("/", (req, res) => {
     res.json("Api is running")
 })
 
+app.get("/health", (req, res) => {
+  res.json({
+    success: true,
+    service: "Order Service",
+    status: "UP"
+  });
+});
+
 app.use("/orders", orderRouter);
 app.use(
     "/internal",

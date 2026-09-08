@@ -25,6 +25,14 @@ app.get("/", (req, res) => {
     res.json("Api is running")
 })
 
+app.get("/health", (req, res) => {
+  res.json({
+    success: true,
+    service: "Payment Service",
+    status: "UP"
+  });
+});
+
 app.use("/payments", paymentRouter);
 
 app.listen(PORT, "0.0.0.0", () => {
