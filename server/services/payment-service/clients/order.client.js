@@ -13,7 +13,7 @@ export const getOrder = async (orderId) => {
         `${ORDER_SERVICE_URL}/internal/orders/get-order/${orderId}`,
         {
             headers: {
-                "x-internal-service-secret":
+                "x-internal-secret":
                     INTERNAL_SERVICE_SECRET
             },
 
@@ -46,7 +46,7 @@ export const markOrderPaymentSuccess = async ({
 
         {
             headers: {
-                "x-internal-service-secret":
+                "x-internal-secret":
                     INTERNAL_SERVICE_SECRET
             },
 
@@ -77,7 +77,7 @@ export const markOrderPaymentFailed = async ({
 
         {
             headers: {
-                "x-internal-service-secret":
+                "x-internal-secret":
                     INTERNAL_SERVICE_SECRET
             },
 

@@ -4,14 +4,9 @@ import { PaymentSession } from "../models/PaymentSession.js";
 import { PaymentTransaction } from "../models/PaymentTransaction.js";
 import { getOrder, markOrderPaymentSuccess } from "../clients/order.client.js";
 
+import { reduceStock } from "../clients/product.client.js";
 
-import {
-    reduceStock
-} from "../clients/product.client.js";
-
-import {
-    clearCart
-} from "../clients/user.client.js";
+import { clearCart } from "../clients/user.client.js";
 
 export const razorpayWebhook = async (
     req,
