@@ -1462,79 +1462,124 @@ export const getSellerLowStock = async (req, res) => {
 };
 
 
-// internalProduct.controller.js
-
-export const reduceStockInternal = async (
-    req,
-    res
-) => {
-
+export const reduceStockInternal = async (req, res) => {
     try {
-
         const {
             orderId,
             items
         } = req.body;
 
+        // ============================================
+        // VALIDATION
+        // ============================================
 
-        if (
-            !orderId ||
-            !Array.isArray(items)
-        ) {
-
+        if (!orderId || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({
-
                 success: false,
-
-                message:
-                    "Invalid stock request"
-
+                message: "Invalid stock request"
             });
-
         }
 
+        // ============================================
+        // REDUCE STOCK FOR EACH VARIANT
+        // ============================================
 
-        // YAHAN Product / ProductVariant model use hoga
-        // because Product Service owns these models.
-
+        const updatedItems = [];
 
         for (const item of items) {
 
-            const product =
-                await Product.findById(
-                    item.product
-                ).session(mongoSession);
+            if (!item.variant || !item.quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid variant or quantity"
+                });
+            }
 
-            if (!product)
-                continue;
+            const quantity = Number(item.quantity);
 
-            // Variant stock update
-            // Next phase me karenge
+            if (!Number.isInteger(quantity) || quantity <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid quantity for variant ${item.variant}`
+                });
+            }
+
+            // ========================================
+            // ATOMIC STOCK REDUCTION
+            // ========================================
+
+            const variant = await ProductVariant.findOneAndUpdate(
+                {
+                    _id: item.variant,
+
+                    // Stock must be enough
+                    "inventory.stock": {
+                        $gte: quantity
+                    }
+                },
+                {
+                    $inc: {
+                        "inventory.stock": -quantity
+                    }
+                },
+                {
+                    new: true
+                }
+            );
+
+            // ========================================
+            // VARIANT NOT FOUND / INSUFFICIENT STOCK
+            // ========================================
+
+            if (!variant) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient stock or variant not found: ${item.variant}`
+                });
+            }
+
+            // ========================================
+            // UPDATE STATUS
+            // ========================================
+
+            if (variant.inventory.stock <= 0) {
+                variant.status = "out_of_stock";
+            } else {
+                variant.status = "active";
+            }
+
+            await variant.save();
+
+            updatedItems.push({
+                variantId: variant._id,
+                sku: variant.sku,
+                quantityReduced: quantity,
+                remainingStock: variant.inventory.stock,
+                status: variant.status
+            });
         }
 
+        // ============================================
+        // SUCCESS
+        // ============================================
 
         return res.status(200).json({
-
             success: true,
-
-            message:
-                "Stock updated successfully",
-
-            orderId
-
+            message: "Stock updated successfully",
+            orderId,
+            items: updatedItems
         });
 
-    }
-    catch (error) {
+    } catch (error) {
+
+        console.error(
+            "❌ Reduce stock error:",
+            error
+        );
 
         return res.status(500).json({
-
             success: false,
-
-            message:
-                error.message
-
+            message: error.message
         });
-
     }
 };

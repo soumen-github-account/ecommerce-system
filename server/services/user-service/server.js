@@ -7,6 +7,7 @@ import { connectDb } from "./config/db.js"
 import userRouter from "./routes/user.routes.js"
 import admin from "./config/firebase.js"
 import cartRoute from "./routes/cart.routes.js";
+import internalRoutes from "./routes/internal.routes.js";
 
 
 const PORT = process.env.PORT || 5002
@@ -32,6 +33,7 @@ app.get("/health", (req, res) => {
 
 app.use("/users", userRouter);
 app.use("/api/cart", cartRoute);
+app.use("/internal", internalRoutes);
 
 
 app.listen(PORT, "0.0.0.0", () => {
