@@ -24,7 +24,7 @@ export const reduceStock = async ({
 
         {
             headers: {
-                "x-internal-service-secret":
+                "x-internal-secret":
                     INTERNAL_SERVICE_SECRET
             },
 
