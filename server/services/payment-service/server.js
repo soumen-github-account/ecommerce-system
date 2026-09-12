@@ -11,8 +11,6 @@ const PORT = process.env.PORT || 5007
 const app = express()
 app.use(cors())
 
-app.use(express.json())
-
 connectDb()
 
 app.post(
@@ -20,6 +18,8 @@ app.post(
     express.raw({ type: "application/json" }),
     razorpayWebhook
 );
+
+app.use(express.json())
 
 app.get("/", (req, res) => {
     res.json("Api is running")
